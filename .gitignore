@@ -1,0 +1,13 @@
+node_modules
+test
+src/**.js
+.idea/*
+
+coverage
+.nyc_output
+*.log
+
+build/
+package-lock.json
+.env
+build/main/lib/auth/index.spec.js
