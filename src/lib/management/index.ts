@@ -53,7 +53,6 @@ export class ManagementClient {
   userpoolConfig: UserPool;
 
   // sub classes definitions
-  graphqlClient: GraphqlClient;
   graphqlClientV2: GraphqlClient;
   httpClient: HttpClient;
   tokenProvider: ManagementTokenProvider;
@@ -67,7 +66,6 @@ export class ManagementClient {
     if (!this.options.userPoolId && !this.options.appId)
       throw new Error('请提供 userPoolId 或者 appId!');
 
-    const graphqlApiEndpoint = `${this.options.host}/graphql`;
     const graphqlApiEndpointV2 = `${this.options.host}/v2/graphql`;
 
     if (!this.options.secret && !this.options.accessToken) {
@@ -79,14 +77,13 @@ export class ManagementClient {
 
     Axios.defaults.baseURL = this.options.host;
 
-    this.graphqlClient = new GraphqlClient(graphqlApiEndpoint, this.options);
     this.graphqlClientV2 = new GraphqlClient(
       graphqlApiEndpointV2,
       this.options
     );
     this.tokenProvider = new ManagementTokenProvider(
       this.options,
-      this.graphqlClient
+      this.graphqlClientV2
     );
     this.httpClient = new HttpClient(this.options, this.tokenProvider);
     this.users = new UsersManagementClient(
@@ -107,7 +104,7 @@ export class ManagementClient {
     );
     this.org = new OrgManagementClient(
       this.options,
-      this.graphqlClient,
+      this.graphqlClientV2,
       this.graphqlClientV2,
       this.tokenProvider
     );
@@ -125,7 +122,7 @@ export class ManagementClient {
 
   async isDomainAvaliable(domain: string) {
     const res = await isDomainAvaliable(
-      this.graphqlClient,
+      this.graphqlClientV2,
       this.tokenProvider,
       { domain }
     );
@@ -182,7 +179,7 @@ export class ManagementClient {
   async userExists(options: { username: string }) {
     const { username } = options;
     const { userExist } = await userExists(
-      this.graphqlClient,
+      this.graphqlClientV2,
       this.tokenProvider,
       {
         userPoolId: this.options.userPoolId,

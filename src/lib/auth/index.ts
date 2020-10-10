@@ -57,7 +57,6 @@ export class AuthenticationClient {
   // 初始化参数
   options: AuthenticationClientOptions;
 
-  graphqlClient: GraphqlClient;
   graphqlClientV2: GraphqlClient;
   httpClient: HttpClient;
   tokenProvider: AuthenticationTokenProvider;
@@ -66,10 +65,8 @@ export class AuthenticationClient {
 
   constructor(options: AuthenticationClientOptions) {
     this.options = Object.assign({}, DEFAULT_OPTIONS, options);
-    const graphqlApiEndpoint = `${this.options.host}/graphql`;
     const graphqlApiEndpointV2 = `${this.options.host}/v2/graphql`;
     // 子模块初始化顺序: GraphqlClient -> ManagementTokenProvider -> Others
-    this.graphqlClient = new GraphqlClient(graphqlApiEndpoint, this.options);
     this.graphqlClientV2 = new GraphqlClient(
       graphqlApiEndpointV2,
       this.options
@@ -320,7 +317,7 @@ export class AuthenticationClient {
    * @param token 用户 AccessToken
    */
   async checkLoginStatus(token: string) {
-    const res = await checkLoginStatus(this.graphqlClient, this.tokenProvider, {
+    const res = await checkLoginStatus(this.graphqlClientV2, this.tokenProvider, {
       token
     });
     return res.checkLoginStatus;

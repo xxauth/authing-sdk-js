@@ -11,16 +11,16 @@ import { ManagementClient } from '../management';
 // @ts-ignore
 global.localStorage = {
   _data: {},
-  setItem: function(id: string, val: any) {
+  setItem: function (id: string, val: any) {
     return (this._data[id] = String(val));
   },
-  getItem: function(id: string) {
+  getItem: function (id: string) {
     return this._data.hasOwnProperty(id) ? this._data[id] : undefined;
   },
-  removeItem: function(id: string) {
+  removeItem: function (id: string) {
     return delete this._data[id];
   },
-  clear: function() {
+  clear: function () {
     return (this._data = {});
   }
 };
