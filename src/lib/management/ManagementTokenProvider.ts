@@ -33,7 +33,7 @@ export class ManagementTokenProvider {
    * @memberof ManagementTokenProvider
    */
   private async getClientWhenSdkInit() {
-    const graphqlApiEndpoint = `${this.options.host}/graphql`;
+    const graphqlApiEndpoint = this.graphqlClient.endpoint // `${this.options.host}/graphql`;
     const res: any = await graphqlRequest({
       endpoint: graphqlApiEndpoint,
       query: `query getClientWhenSdkInit($clientId: String!, $secret: String!) {\n  getClientWhenSdkInit(clientId: $clientId, secret: $secret) {\n    accessToken\n  }\n}\n`,
@@ -51,7 +51,7 @@ export class ManagementTokenProvider {
    * @memberof ManagementTokenProvider
    */
   private async refreshToken() {
-    const graphqlApiEndpoint = `${this.options.host}/graphql`;
+    const graphqlApiEndpoint = this.graphqlClient.endpoint; // `${this.options.host}/graphql`;
 
     const res: any = await graphqlRequest({
       endpoint: graphqlApiEndpoint,
