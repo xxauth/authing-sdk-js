@@ -13,8 +13,13 @@
 
   <script src="../build/umd/index.js"></script>
   <script>
-    const authing = new Authing({ userPoolId: '59f86b4832eb28071bdd9214', host: 'http://localhost:3000' });
+    const authing = new Authing({ userPoolId: '7f74f487bc121542ad0c7e3d', host: 'https://core.xauth.lucfish.com' });
     authing.qr.startScanning()
+    /*
+     const authing = new authing({ userPoolId: '7f74f487bc121542ad0c7e3d' });
+
+    authing.loginByPhonePassword('16620981522', '43432423423')
+    */
   </script>
 </body>
 
