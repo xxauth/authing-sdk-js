@@ -42,7 +42,10 @@ export class GraphqlClient {
       const errors = response.errors;
       errors.map((err: any) => {
         const { message: msg } = err;
-        const { code, message } = msg;
+        // console.log('打印错误', err);
+        const { errors } = JSON.parse(msg);
+        const { message: errorMessage } = errors[0]
+        const { code, message } = errorMessage;
         errcode = code;
         errmsg = message;
         this.options.onError(code, message);
