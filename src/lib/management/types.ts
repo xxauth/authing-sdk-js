@@ -1,4 +1,6 @@
 import { Org } from '../../types/graphql.v2';
+import { GraphqlClient } from '../common/GraphqlClient';
+import { HttpClient } from '../common/HttpClient';
 
 /**
  * 初始化 Authing SDK 的参数，secret 和 accessToken 必须传其中一个。
@@ -15,14 +17,17 @@ export interface ManagementClientOptions {
   /** 请求超时时间 **/
   timeout?: number;
   /** 错误回调函数, 默认为 (err: Error) => { throw err } 直接抛出报错 **/
-  onError?: (code: number, message: string) => void;
+  onError?: (code: number, message: string, data?: any) => void;
   /** 密码加密的公钥 */
   encrptionPublicKey?: string;
   /** Authing 服务器地址 */
   host?: string;
   /** 请求来源 */
   requestFrom?: string;
-  enableAccessTokenCache?: boolean;
+  /** 加密函数 */
+  encryptFunction?: (plainText: string, publicKey: string) => Promise<string>;
+  httpClient?: typeof HttpClient;
+  graphqlClient?: typeof GraphqlClient;
 }
 
 /**

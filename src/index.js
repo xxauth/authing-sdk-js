@@ -10,6 +10,10 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 exports.__esModule = true;
-__exportStar(require("./lib/management"), exports);
-__exportStar(require("./lib/auth"), exports);
+__exportStar(require("./lib/management/ManagementClient"), exports);
+__exportStar(require("./lib/management/types"), exports);
+__exportStar(require("./lib/management/ManagementTokenProvider"), exports);
+__exportStar(require("./lib/authentication/types"), exports);
+__exportStar(require("./lib/authentication/AuthenticationClient"), exports);
+__exportStar(require("./lib/authentication/AuthenticationTokenProvider"), exports);
 __exportStar(require("./types/graphql.v2"), exports);

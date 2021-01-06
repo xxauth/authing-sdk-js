@@ -7,10 +7,6 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
-  email_String_NotNull_format_email: any;
-  code_String_NotNull_minLength_4_maxLength_6: any;
-  username_String_NotNull_minLength_4_maxLength_50: any;
-  ip_String_format_ipv4: any;
 };
 
 export type Query = {
@@ -30,8 +26,8 @@ export type Query = {
   templateCode: Scalars['String'];
   function?: Maybe<Function>;
   functions: PaginatedFunctions;
+  group?: Maybe<Group>;
   groups: PaginatedGroups;
-  addUserToGroup: PaginatedGroups;
   /** 查询 MFA 信息 */
   queryMfa?: Maybe<Mfa>;
   nodeById?: Maybe<Node>;
@@ -43,12 +39,16 @@ export type Query = {
   orgs: PaginatedOrgs;
   /** 查询子节点列表 */
   childrenNodes: Array<Node>;
+  rootNode: Node;
+  isRootNode?: Maybe<Scalars['Boolean']>;
   checkPasswordStrength: CheckPasswordStrengthResult;
   isActionAllowed: Scalars['Boolean'];
   isActionDenied: Scalars['Boolean'];
+  policy?: Maybe<Policy>;
   policies: PaginatedPolicies;
+  policyAssignments: PaginatedPolicyAssignments;
   /** 通过 **code** 查询角色详情 */
-  role: Role;
+  role?: Maybe<Role>;
   /** 获取角色列表 */
   roles: PaginatedRoles;
   /** 查询某个实体定义的自定义数据 */
@@ -59,11 +59,16 @@ export type Query = {
   userBatch: Array<User>;
   users: PaginatedUsers;
   searchUser: PaginatedUsers;
+  checkLoginStatus?: Maybe<JwtTokenStatus>;
+  isUserExists?: Maybe<Scalars['Boolean']>;
+  findUser?: Maybe<User>;
   /** 查询用户池详情 */
   userpool: UserPool;
   /** 查询用户池列表 */
   userpools: PaginatedUserpool;
   userpoolTypes: Array<UserPoolType>;
+  /** 获取 accessToken ，如 SDK 初始化 */
+  accessToken: AccessTokenRes;
   /** 用户池注册白名单列表 */
   whitelist: Array<WhiteList>;
 };
@@ -98,16 +103,15 @@ export type QueryFunctionsArgs = {
   sortBy?: Maybe<SortByEnum>;
 };
 
+export type QueryGroupArgs = {
+  code: Scalars['String'];
+};
+
 export type QueryGroupsArgs = {
   userId?: Maybe<Scalars['String']>;
   page?: Maybe<Scalars['Int']>;
   limit?: Maybe<Scalars['Int']>;
   sortBy?: Maybe<SortByEnum>;
-};
-
-export type QueryAddUserToGroupArgs = {
-  userId?: Maybe<Scalars['String']>;
-  groupId?: Maybe<Scalars['String']>;
 };
 
 export type QueryQueryMfaArgs = {
@@ -140,6 +144,15 @@ export type QueryChildrenNodesArgs = {
   nodeId: Scalars['String'];
 };
 
+export type QueryRootNodeArgs = {
+  orgId: Scalars['String'];
+};
+
+export type QueryIsRootNodeArgs = {
+  nodeId: Scalars['String'];
+  orgId: Scalars['String'];
+};
+
 export type QueryCheckPasswordStrengthArgs = {
   password: Scalars['String'];
 };
@@ -154,6 +167,24 @@ export type QueryIsActionDeniedArgs = {
   resource: Scalars['String'];
   action: Scalars['String'];
   userId: Scalars['String'];
+};
+
+export type QueryPolicyArgs = {
+  code: Scalars['String'];
+};
+
+export type QueryPoliciesArgs = {
+  page?: Maybe<Scalars['Int']>;
+  limit?: Maybe<Scalars['Int']>;
+  excludeDefault?: Maybe<Scalars['Boolean']>;
+};
+
+export type QueryPolicyAssignmentsArgs = {
+  code?: Maybe<Scalars['String']>;
+  targetType?: Maybe<PolicyAssignmentTargetType>;
+  targetIdentifier?: Maybe<Scalars['String']>;
+  page?: Maybe<Scalars['Int']>;
+  limit?: Maybe<Scalars['Int']>;
 };
 
 export type QueryRoleArgs = {
@@ -196,10 +227,31 @@ export type QuerySearchUserArgs = {
   limit?: Maybe<Scalars['Int']>;
 };
 
+export type QueryCheckLoginStatusArgs = {
+  token?: Maybe<Scalars['String']>;
+};
+
+export type QueryIsUserExistsArgs = {
+  email?: Maybe<Scalars['String']>;
+  phone?: Maybe<Scalars['String']>;
+  username?: Maybe<Scalars['String']>;
+};
+
+export type QueryFindUserArgs = {
+  email?: Maybe<Scalars['String']>;
+  phone?: Maybe<Scalars['String']>;
+  username?: Maybe<Scalars['String']>;
+};
+
 export type QueryUserpoolsArgs = {
   page?: Maybe<Scalars['Int']>;
   limit?: Maybe<Scalars['Int']>;
   sortBy?: Maybe<SortByEnum>;
+};
+
+export type QueryAccessTokenArgs = {
+  userPoolId: Scalars['String'];
+  secret: Scalars['String'];
 };
 
 export type QueryWhitelistArgs = {
@@ -305,11 +357,6 @@ export type PaginatedFunctions = {
   totalCount: Scalars['Int'];
 };
 
-export type PaginatedGroups = {
-  totalCount: Scalars['Int'];
-  list: Array<Group>;
-};
-
 export type Group = {
   /** 唯一标志 code */
   code: Scalars['String'];
@@ -323,6 +370,11 @@ export type Group = {
   updatedAt?: Maybe<Scalars['String']>;
   /** 包含的用户列表 */
   users: PaginatedUsers;
+};
+
+export type GroupUsersArgs = {
+  page?: Maybe<Scalars['Int']>;
+  limit?: Maybe<Scalars['Int']>;
 };
 
 export type PaginatedUsers = {
@@ -401,9 +453,8 @@ export type User = {
   country?: Maybe<Scalars['String']>;
   createdAt?: Maybe<Scalars['String']>;
   updatedAt?: Maybe<Scalars['String']>;
-  /** 自定义用户数据，是一个 JSON 序列化过后的字符串 */
-  customData?: Maybe<Scalars['String']>;
   roles?: Maybe<PaginatedRoles>;
+  groups?: Maybe<PaginatedGroups>;
 };
 
 export type Identity = {
@@ -438,6 +489,11 @@ export type Role = {
   users: PaginatedUsers;
   /** 父角色 */
   parent?: Maybe<Role>;
+};
+
+export type PaginatedGroups = {
+  totalCount: Scalars['Int'];
+  list: Array<Group>;
 };
 
 export type Mfa = {
@@ -506,27 +562,55 @@ export type CheckPasswordStrengthResult = {
   message?: Maybe<Scalars['String']>;
 };
 
-export type PaginatedPolicies = {
-  totalCount: Scalars['Int'];
-  list: Array<Policy>;
-};
-
-/** 资源操作规则 */
 export type Policy = {
   code: Scalars['String'];
-  /** 资源 */
-  resource: Scalars['String'];
-  /** 操作 */
-  actions: Array<Scalars['String']>;
-  effect: PolicyEffect;
+  isDefault: Scalars['Boolean'];
+  description?: Maybe<Scalars['String']>;
+  statements: Array<PolicyStatement>;
   createdAt?: Maybe<Scalars['String']>;
   updatedAt?: Maybe<Scalars['String']>;
+  /** 被授权次数 */
+  assignmentsCount: Scalars['Int'];
+  /** 授权记录 */
+  assignments: Array<PolicyAssignment>;
+};
+
+export type PolicyAssignmentsArgs = {
+  page?: Maybe<Scalars['Int']>;
+  limit?: Maybe<Scalars['Int']>;
+};
+
+export type PolicyStatement = {
+  resource: Scalars['String'];
+  actions: Array<Scalars['String']>;
+  effect?: Maybe<PolicyEffect>;
 };
 
 export enum PolicyEffect {
   Allow = 'ALLOW',
   Deny = 'DENY'
 }
+
+export type PolicyAssignment = {
+  code: Scalars['String'];
+  targetType: PolicyAssignmentTargetType;
+  targetIdentifier: Scalars['String'];
+};
+
+export enum PolicyAssignmentTargetType {
+  User = 'USER',
+  Role = 'ROLE'
+}
+
+export type PaginatedPolicies = {
+  totalCount: Scalars['Int'];
+  list: Array<Policy>;
+};
+
+export type PaginatedPolicyAssignments = {
+  totalCount: Scalars['Int'];
+  list: Array<PolicyAssignment>;
+};
 
 export enum UdfTargetType {
   Node = 'NODE',
@@ -558,6 +642,21 @@ export type UserDefinedField = {
   key: Scalars['String'];
   label: Scalars['String'];
   options?: Maybe<Scalars['String']>;
+};
+
+export type JwtTokenStatus = {
+  code?: Maybe<Scalars['Int']>;
+  message?: Maybe<Scalars['String']>;
+  status?: Maybe<Scalars['Boolean']>;
+  exp?: Maybe<Scalars['Int']>;
+  iat?: Maybe<Scalars['Int']>;
+  data?: Maybe<JwtTokenStatusDetail>;
+};
+
+export type JwtTokenStatusDetail = {
+  id?: Maybe<Scalars['String']>;
+  userPoolId?: Maybe<Scalars['String']>;
+  arn?: Maybe<Scalars['String']>;
 };
 
 export type UserPool = {
@@ -602,6 +701,8 @@ export type UserPool = {
   app2WxappLoginStrategy?: Maybe<App2WxappLoginStrategy>;
   /** 注册白名单配置 */
   whitelist?: Maybe<RegisterWhiteListConfig>;
+  /** 自定义短信服务商配置 */
+  customSMSProvider?: Maybe<CustomSmsProvider>;
 };
 
 export type UserPoolType = {
@@ -653,9 +754,29 @@ export type RegisterWhiteListConfig = {
   usernameEnabled?: Maybe<Scalars['Boolean']>;
 };
 
+export type CustomSmsProvider = {
+  enabled?: Maybe<Scalars['Boolean']>;
+  provider?: Maybe<Scalars['String']>;
+  config253?: Maybe<SmsConfig253>;
+};
+
+export type SmsConfig253 = {
+  sendSmsApi: Scalars['String'];
+  appId: Scalars['String'];
+  key: Scalars['String'];
+  template: Scalars['String'];
+  ttl: Scalars['Int'];
+};
+
 export type PaginatedUserpool = {
   totalCount: Scalars['Int'];
   list: Array<UserPool>;
+};
+
+export type AccessTokenRes = {
+  accessToken?: Maybe<Scalars['String']>;
+  exp?: Maybe<Scalars['Int']>;
+  iat?: Maybe<Scalars['Int']>;
 };
 
 export enum WhitelistType {
@@ -692,6 +813,14 @@ export type Mutation = {
   /** 修改函数 */
   updateFunction: Function;
   deleteFunction: CommonMessage;
+  addUserToGroup: CommonMessage;
+  removeUserFromGroup: CommonMessage;
+  /** 创建角色 */
+  createGroup: Group;
+  /** 修改角色 */
+  updateGroup: Group;
+  /** 批量删除角色 */
+  deleteGroups: CommonMessage;
   loginByEmail?: Maybe<User>;
   loginByUsername?: Maybe<User>;
   loginByPhoneCode?: Maybe<User>;
@@ -715,6 +844,11 @@ export type Mutation = {
   moveNode: Org;
   resetPassword?: Maybe<CommonMessage>;
   createPolicy: Policy;
+  updatePolicy: Policy;
+  deletePolicy: CommonMessage;
+  deletePolicies: CommonMessage;
+  addPolicyAssignments: CommonMessage;
+  removePolicyAssignments: CommonMessage;
   /** 允许操作某个资源 */
   allow: CommonMessage;
   registerByUsername?: Maybe<User>;
@@ -727,13 +861,13 @@ export type Mutation = {
   /** 删除角色 */
   deleteRole: CommonMessage;
   /** 批量删除角色 */
-  deleteRoles: BatchOperationResult;
+  deleteRoles: CommonMessage;
   /** 给用户授权角色 */
-  assignRole: Role;
+  assignRole?: Maybe<CommonMessage>;
   /** 撤销角色 */
-  revokeRole: Role;
-  addUdf: Array<UserDefinedField>;
-  removeUdf: Array<UserDefinedField>;
+  revokeRole?: Maybe<CommonMessage>;
+  setUdf: UserDefinedField;
+  removeUdf?: Maybe<CommonMessage>;
   setUdv?: Maybe<Array<UserDefinedData>>;
   removeUdv?: Maybe<Array<UserDefinedData>>;
   refreshToken?: Maybe<RefreshToken>;
@@ -751,6 +885,8 @@ export type Mutation = {
   updatePhone: User;
   /** 修改邮箱。此接口需要验证邮箱验证码，管理员直接修改请使用 updateUser 接口。 */
   updateEmail: User;
+  /** 解绑定邮箱 */
+  unbindEmail: User;
   /** 删除用户 */
   deleteUser?: Maybe<CommonMessage>;
   /** 批量删除用户 */
@@ -760,6 +896,7 @@ export type Mutation = {
   updateUserpool: UserPool;
   refreshUserpoolSecret: Scalars['String'];
   deleteUserpool: CommonMessage;
+  refreshAccessToken: RefreshAccessTokenRes;
   addWhitelist: Array<Maybe<WhiteList>>;
   removeWhitelist: Array<Maybe<WhiteList>>;
 };
@@ -807,6 +944,33 @@ export type MutationUpdateFunctionArgs = {
 
 export type MutationDeleteFunctionArgs = {
   id: Scalars['String'];
+};
+
+export type MutationAddUserToGroupArgs = {
+  userIds: Array<Scalars['String']>;
+  code?: Maybe<Scalars['String']>;
+};
+
+export type MutationRemoveUserFromGroupArgs = {
+  userIds: Array<Scalars['String']>;
+  code?: Maybe<Scalars['String']>;
+};
+
+export type MutationCreateGroupArgs = {
+  code: Scalars['String'];
+  name: Scalars['String'];
+  description?: Maybe<Scalars['String']>;
+};
+
+export type MutationUpdateGroupArgs = {
+  code: Scalars['String'];
+  name?: Maybe<Scalars['String']>;
+  description?: Maybe<Scalars['String']>;
+  newCode?: Maybe<Scalars['String']>;
+};
+
+export type MutationDeleteGroupsArgs = {
+  codeList: Array<Scalars['String']>;
 };
 
 export type MutationLoginByEmailArgs = {
@@ -896,9 +1060,35 @@ export type MutationResetPasswordArgs = {
 
 export type MutationCreatePolicyArgs = {
   code: Scalars['String'];
-  resource: Scalars['String'];
-  actions: Array<Scalars['String']>;
-  effect: PolicyEffect;
+  description?: Maybe<Scalars['String']>;
+  statements: Array<PolicyStatementInput>;
+};
+
+export type MutationUpdatePolicyArgs = {
+  code: Scalars['String'];
+  description?: Maybe<Scalars['String']>;
+  statements?: Maybe<Array<PolicyStatementInput>>;
+  newCode?: Maybe<Scalars['String']>;
+};
+
+export type MutationDeletePolicyArgs = {
+  code: Scalars['String'];
+};
+
+export type MutationDeletePoliciesArgs = {
+  codeList: Array<Scalars['String']>;
+};
+
+export type MutationAddPolicyAssignmentsArgs = {
+  policies: Array<Scalars['String']>;
+  targetType: PolicyAssignmentTargetType;
+  targetIdentifiers?: Maybe<Array<Scalars['String']>>;
+};
+
+export type MutationRemovePolicyAssignmentsArgs = {
+  policies: Array<Scalars['String']>;
+  targetType: PolicyAssignmentTargetType;
+  targetIdentifiers?: Maybe<Array<Scalars['String']>>;
 };
 
 export type MutationAllowArgs = {
@@ -939,24 +1129,26 @@ export type MutationDeleteRoleArgs = {
 };
 
 export type MutationDeleteRolesArgs = {
-  codes: Array<Scalars['String']>;
+  codeList: Array<Scalars['String']>;
 };
 
 export type MutationAssignRoleArgs = {
-  code: Scalars['String'];
+  roleCode?: Maybe<Scalars['String']>;
+  roleCodes?: Maybe<Array<Maybe<Scalars['String']>>>;
   userIds?: Maybe<Array<Scalars['String']>>;
   groupCodes?: Maybe<Array<Scalars['String']>>;
   nodeCodes?: Maybe<Array<Scalars['String']>>;
 };
 
 export type MutationRevokeRoleArgs = {
-  code: Scalars['String'];
+  roleCode?: Maybe<Scalars['String']>;
+  roleCodes?: Maybe<Array<Maybe<Scalars['String']>>>;
   userIds?: Maybe<Array<Scalars['String']>>;
   groupCodes?: Maybe<Array<Scalars['String']>>;
   nodeCodes?: Maybe<Array<Scalars['String']>>;
 };
 
-export type MutationAddUdfArgs = {
+export type MutationSetUdfArgs = {
   targetType: UdfTargetType;
   key: Scalars['String'];
   dataType: UdfDataType;
@@ -1040,6 +1232,10 @@ export type MutationUpdateUserpoolArgs = {
   input: UpdateUserpoolInput;
 };
 
+export type MutationRefreshAccessTokenArgs = {
+  accessToken?: Maybe<Scalars['String']>;
+};
+
 export type MutationAddWhitelistArgs = {
   type: WhitelistType;
   list: Array<Scalars['String']>;
@@ -1099,7 +1295,7 @@ export type ConfigEmailTemplateInput = {
 export enum EmailScene {
   /** 发送重置密码邮件，邮件中包含验证码 */
   ResetPassword = 'RESET_PASSWORD',
-  /** 发送短信验证邮件 */
+  /** 发送验证邮箱的邮件 */
   VerifyEmail = 'VERIFY_EMAIL',
   /** 发送修改邮箱邮件，邮件中包含验证码 */
   ChangeEmail = 'CHANGE_EMAIL'
@@ -1140,12 +1336,13 @@ export type UpdateFunctionInput = {
 };
 
 export type LoginByEmailInput = {
-  email: Scalars['email_String_NotNull_format_email'];
+  email: Scalars['String'];
   password: Scalars['String'];
   /** 图形验证码 */
   captchaCode?: Maybe<Scalars['String']>;
   /** 如果用户不存在，是否自动创建一个账号 */
   autoRegister?: Maybe<Scalars['Boolean']>;
+  clientIp?: Maybe<Scalars['String']>;
 };
 
 export type LoginByUsernameInput = {
@@ -1155,13 +1352,15 @@ export type LoginByUsernameInput = {
   captchaCode?: Maybe<Scalars['String']>;
   /** 如果用户不存在，是否自动创建一个账号 */
   autoRegister?: Maybe<Scalars['Boolean']>;
+  clientIp?: Maybe<Scalars['String']>;
 };
 
 export type LoginByPhoneCodeInput = {
   phone: Scalars['String'];
-  code: Scalars['code_String_NotNull_minLength_4_maxLength_6'];
+  code: Scalars['String'];
   /** 如果用户不存在，是否自动创建一个账号 */
   autoRegister?: Maybe<Scalars['Boolean']>;
+  clientIp?: Maybe<Scalars['String']>;
 };
 
 export type LoginByPhonePasswordInput = {
@@ -1171,18 +1370,26 @@ export type LoginByPhonePasswordInput = {
   captchaCode?: Maybe<Scalars['String']>;
   /** 如果用户不存在，是否自动创建一个账号 */
   autoRegister?: Maybe<Scalars['Boolean']>;
+  clientIp?: Maybe<Scalars['String']>;
+};
+
+export type PolicyStatementInput = {
+  resource: Scalars['String'];
+  actions: Array<Scalars['String']>;
+  effect?: Maybe<PolicyEffect>;
 };
 
 export type RegisterByUsernameInput = {
-  username: Scalars['username_String_NotNull_minLength_4_maxLength_50'];
+  username: Scalars['String'];
   password: Scalars['String'];
   profile?: Maybe<RegisterProfile>;
   forceLogin?: Maybe<Scalars['Boolean']>;
   generateToken?: Maybe<Scalars['Boolean']>;
+  clientIp?: Maybe<Scalars['String']>;
 };
 
 export type RegisterProfile = {
-  ip?: Maybe<Scalars['ip_String_format_ipv4']>;
+  ip?: Maybe<Scalars['String']>;
   oauth?: Maybe<Scalars['String']>;
   nickname?: Maybe<Scalars['String']>;
   company?: Maybe<Scalars['String']>;
@@ -1216,11 +1423,12 @@ export type UserDdfInput = {
 };
 
 export type RegisterByEmailInput = {
-  email: Scalars['email_String_NotNull_format_email'];
+  email: Scalars['String'];
   password: Scalars['String'];
   profile?: Maybe<RegisterProfile>;
   forceLogin?: Maybe<Scalars['Boolean']>;
   generateToken?: Maybe<Scalars['Boolean']>;
+  clientIp?: Maybe<Scalars['String']>;
 };
 
 export type RegisterByPhoneCodeInput = {
@@ -1230,16 +1438,7 @@ export type RegisterByPhoneCodeInput = {
   profile?: Maybe<RegisterProfile>;
   forceLogin?: Maybe<Scalars['Boolean']>;
   generateToken?: Maybe<Scalars['Boolean']>;
-};
-
-/** 批量删除返回结果 */
-export type BatchOperationResult = {
-  /** 删除成功的个数 */
-  succeedCount: Scalars['Int'];
-  /** 删除失败的个数 */
-  failedCount: Scalars['Int'];
-  message?: Maybe<Scalars['String']>;
-  errors?: Maybe<Array<Scalars['String']>>;
+  clientIp?: Maybe<Scalars['String']>;
 };
 
 export type RefreshToken = {
@@ -1251,7 +1450,7 @@ export type RefreshToken = {
 export type CreateUserInput = {
   /** 用户名，用户池内唯一 */
   username?: Maybe<Scalars['String']>;
-  /** 邮箱，用户池内唯一 */
+  /** 邮箱，不区分大小写，如 Bob@example.com 和 bob@example.com 会识别为同一个邮箱。用户池内唯一。 */
   email?: Maybe<Scalars['String']>;
   /** 邮箱是否已验证 */
   emailVerified?: Maybe<Scalars['Boolean']>;
@@ -1321,7 +1520,6 @@ export type UpdateUserInput = {
   /** 头像链接，默认为 https://usercontents.authing.cn/authing-avatar.png */
   photo?: Maybe<Scalars['String']>;
   /** 注册方式 */
-  registerSource?: Maybe<Array<Scalars['String']>>;
   company?: Maybe<Scalars['String']>;
   browser?: Maybe<Scalars['String']>;
   device?: Maybe<Scalars['String']>;
@@ -1332,9 +1530,7 @@ export type UpdateUserInput = {
   lastLogin?: Maybe<Scalars['String']>;
   lastIP?: Maybe<Scalars['String']>;
   /** 用户注册时间，当你从你原有用户系统向 Authing 迁移的时候可以设置此字段。 */
-  signedUp?: Maybe<Scalars['String']>;
   blocked?: Maybe<Scalars['Boolean']>;
-  isDeleted?: Maybe<Scalars['Boolean']>;
   name?: Maybe<Scalars['String']>;
   givenName?: Maybe<Scalars['String']>;
   familyName?: Maybe<Scalars['String']>;
@@ -1355,7 +1551,6 @@ export type UpdateUserInput = {
   city?: Maybe<Scalars['String']>;
   province?: Maybe<Scalars['String']>;
   country?: Maybe<Scalars['String']>;
-  updatedAt?: Maybe<Scalars['String']>;
 };
 
 export type UpdateUserpoolInput = {
@@ -1369,8 +1564,6 @@ export type UpdateUserpoolInput = {
   registerDisabled?: Maybe<Scalars['Boolean']>;
   allowedOrigins?: Maybe<Scalars['String']>;
   tokenExpiresAfter?: Maybe<Scalars['Int']>;
-  emailWhitelistEnabled?: Maybe<Scalars['Boolean']>;
-  phoneWhitelistEnabled?: Maybe<Scalars['Boolean']>;
   frequentRegisterCheck?: Maybe<FrequentRegisterCheckConfigInput>;
   loginFailCheck?: Maybe<LoginFailCheckConfigInput>;
   changePhoneStrategy?: Maybe<ChangePhoneStrategyInput>;
@@ -1378,6 +1571,8 @@ export type UpdateUserpoolInput = {
   qrcodeLoginStrategy?: Maybe<QrcodeLoginStrategyInput>;
   app2WxappLoginStrategy?: Maybe<App2WxappLoginStrategyInput>;
   whitelist?: Maybe<RegisterWhiteListConfigInput>;
+  /** 自定义短信服务商配置 */
+  customSMSProvider?: Maybe<CustomSmsProviderInput>;
 };
 
 export type FrequentRegisterCheckConfigInput = {
@@ -1416,6 +1611,36 @@ export type RegisterWhiteListConfigInput = {
   phoneEnabled?: Maybe<Scalars['Boolean']>;
   emailEnabled?: Maybe<Scalars['Boolean']>;
   usernameEnabled?: Maybe<Scalars['Boolean']>;
+};
+
+export type CustomSmsProviderInput = {
+  enabled?: Maybe<Scalars['Boolean']>;
+  provider?: Maybe<Scalars['String']>;
+  config253?: Maybe<SmsConfig253Input>;
+};
+
+export type SmsConfig253Input = {
+  appId: Scalars['String'];
+  key: Scalars['String'];
+  template: Scalars['String'];
+  ttl: Scalars['Int'];
+  sendSmsApi: Scalars['String'];
+};
+
+export type RefreshAccessTokenRes = {
+  accessToken?: Maybe<Scalars['String']>;
+  exp?: Maybe<Scalars['Int']>;
+  iat?: Maybe<Scalars['Int']>;
+};
+
+/** 批量删除返回结果 */
+export type BatchOperationResult = {
+  /** 删除成功的个数 */
+  succeedCount: Scalars['Int'];
+  /** 删除失败的个数 */
+  failedCount: Scalars['Int'];
+  message?: Maybe<Scalars['String']>;
+  errors?: Maybe<Array<Scalars['String']>>;
 };
 
 export type KeyValuePair = {
@@ -1496,9 +1721,11 @@ export type AddMemberResponse = {
         locality?: Maybe<string>;
         region?: Maybe<string>;
         postalCode?: Maybe<string>;
+        city?: Maybe<string>;
+        province?: Maybe<string>;
         country?: Maybe<string>;
+        createdAt?: Maybe<string>;
         updatedAt?: Maybe<string>;
-        customData?: Maybe<string>;
       }>;
     };
   };
@@ -1551,22 +1778,23 @@ export type AddNodeResponse = {
   };
 };
 
-export type AddUdfVariables = Exact<{
-  targetType: UdfTargetType;
-  key: Scalars['String'];
-  dataType: UdfDataType;
-  label: Scalars['String'];
-  options?: Maybe<Scalars['String']>;
+export type AddPolicyAssignmentsVariables = Exact<{
+  policies: Array<Scalars['String']>;
+  targetType: PolicyAssignmentTargetType;
+  targetIdentifiers?: Maybe<Array<Scalars['String']>>;
 }>;
 
-export type AddUdfResponse = {
-  addUdf: Array<{
-    targetType: UdfTargetType;
-    dataType: UdfDataType;
-    key: string;
-    label: string;
-    options?: Maybe<string>;
-  }>;
+export type AddPolicyAssignmentsResponse = {
+  addPolicyAssignments: { message?: Maybe<string>; code?: Maybe<number> };
+};
+
+export type AddUserToGroupVariables = Exact<{
+  userIds: Array<Scalars['String']>;
+  code?: Maybe<Scalars['String']>;
+}>;
+
+export type AddUserToGroupResponse = {
+  addUserToGroup: { message?: Maybe<string>; code?: Maybe<number> };
 };
 
 export type AddWhitelistVariables = Exact<{
@@ -1598,29 +1826,15 @@ export type AllowResponse = {
 };
 
 export type AssignRoleVariables = Exact<{
-  code: Scalars['String'];
+  roleCode?: Maybe<Scalars['String']>;
+  roleCodes?: Maybe<Array<Maybe<Scalars['String']>>>;
   userIds?: Maybe<Array<Scalars['String']>>;
   groupCodes?: Maybe<Array<Scalars['String']>>;
   nodeCodes?: Maybe<Array<Scalars['String']>>;
 }>;
 
 export type AssignRoleResponse = {
-  assignRole: {
-    code: string;
-    arn: string;
-    description?: Maybe<string>;
-    isSystem?: Maybe<boolean>;
-    createdAt?: Maybe<string>;
-    updatedAt?: Maybe<string>;
-    users: { totalCount: number };
-    parent?: Maybe<{
-      code: string;
-      description?: Maybe<string>;
-      isSystem?: Maybe<boolean>;
-      createdAt?: Maybe<string>;
-      updatedAt?: Maybe<string>;
-    }>;
-  };
+  assignRole?: Maybe<{ message?: Maybe<string>; code?: Maybe<number> }>;
 };
 
 export type BindPhoneVariables = Exact<{
@@ -1673,23 +1887,11 @@ export type BindPhoneResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   };
 };
 
@@ -1744,6 +1946,22 @@ export type CreateFunctionResponse = {
   }>;
 };
 
+export type CreateGroupVariables = Exact<{
+  code: Scalars['String'];
+  name: Scalars['String'];
+  description?: Maybe<Scalars['String']>;
+}>;
+
+export type CreateGroupResponse = {
+  createGroup: {
+    code: string;
+    name: string;
+    description?: Maybe<string>;
+    createdAt?: Maybe<string>;
+    updatedAt?: Maybe<string>;
+  };
+};
+
 export type CreateOrgVariables = Exact<{
   name: Scalars['String'];
   code?: Maybe<Scalars['String']>;
@@ -1788,19 +2006,23 @@ export type CreateOrgResponse = {
 
 export type CreatePolicyVariables = Exact<{
   code: Scalars['String'];
-  resource: Scalars['String'];
-  actions: Array<Scalars['String']>;
-  effect: PolicyEffect;
+  description?: Maybe<Scalars['String']>;
+  statements: Array<PolicyStatementInput>;
 }>;
 
 export type CreatePolicyResponse = {
   createPolicy: {
     code: string;
-    resource: string;
-    actions: Array<string>;
-    effect: PolicyEffect;
+    assignmentsCount: number;
+    isDefault: boolean;
+    description?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
+    statements: Array<{
+      resource: string;
+      actions: Array<string>;
+      effect?: Maybe<PolicyEffect>;
+    }>;
   };
 };
 
@@ -1818,9 +2040,9 @@ export type CreateRoleResponse = {
     isSystem?: Maybe<boolean>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    users: { totalCount: number };
     parent?: Maybe<{
       code: string;
+      arn: string;
       description?: Maybe<string>;
       isSystem?: Maybe<boolean>;
       createdAt?: Maybe<string>;
@@ -1912,23 +2134,11 @@ export type CreateUserResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   };
 };
 
@@ -1947,6 +2157,7 @@ export type CreateUserpoolResponse = {
     domain: string;
     description?: Maybe<string>;
     secret: string;
+    jwtSecret: string;
     logo: string;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
@@ -1993,6 +2204,10 @@ export type CreateUserpoolResponse = {
       emailEnabled?: Maybe<boolean>;
       usernameEnabled?: Maybe<boolean>;
     }>;
+    customSMSProvider?: Maybe<{
+      enabled?: Maybe<boolean>;
+      provider?: Maybe<string>;
+    }>;
   };
 };
 
@@ -2002,6 +2217,14 @@ export type DeleteFunctionVariables = Exact<{
 
 export type DeleteFunctionResponse = {
   deleteFunction: { message?: Maybe<string>; code?: Maybe<number> };
+};
+
+export type DeleteGroupsVariables = Exact<{
+  codeList: Array<Scalars['String']>;
+}>;
+
+export type DeleteGroupsResponse = {
+  deleteGroups: { message?: Maybe<string>; code?: Maybe<number> };
 };
 
 export type DeleteNodeVariables = Exact<{
@@ -2021,6 +2244,22 @@ export type DeleteOrgResponse = {
   deleteOrg: { message?: Maybe<string>; code?: Maybe<number> };
 };
 
+export type DeletePoliciesVariables = Exact<{
+  codeList: Array<Scalars['String']>;
+}>;
+
+export type DeletePoliciesResponse = {
+  deletePolicies: { message?: Maybe<string>; code?: Maybe<number> };
+};
+
+export type DeletePolicyVariables = Exact<{
+  code: Scalars['String'];
+}>;
+
+export type DeletePolicyResponse = {
+  deletePolicy: { message?: Maybe<string>; code?: Maybe<number> };
+};
+
 export type DeleteRoleVariables = Exact<{
   code: Scalars['String'];
 }>;
@@ -2030,16 +2269,11 @@ export type DeleteRoleResponse = {
 };
 
 export type DeleteRolesVariables = Exact<{
-  codes: Array<Scalars['String']>;
+  codeList: Array<Scalars['String']>;
 }>;
 
 export type DeleteRolesResponse = {
-  deleteRoles: {
-    succeedCount: number;
-    failedCount: number;
-    message?: Maybe<string>;
-    errors?: Maybe<Array<string>>;
-  };
+  deleteRoles: { message?: Maybe<string>; code?: Maybe<number> };
 };
 
 export type DeleteUserVariables = Exact<{
@@ -2175,23 +2409,11 @@ export type LoginByEmailResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   }>;
 };
 
@@ -2244,23 +2466,11 @@ export type LoginByPhoneCodeResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   }>;
 };
 
@@ -2313,23 +2523,11 @@ export type LoginByPhonePasswordResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   }>;
 };
 
@@ -2382,23 +2580,11 @@ export type LoginByUsernameResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   }>;
 };
 
@@ -2441,6 +2627,18 @@ export type MoveNodeResponse = {
       updatedAt?: Maybe<string>;
       children?: Maybe<Array<string>>;
     }>;
+  };
+};
+
+export type RefreshAccessTokenVariables = Exact<{
+  accessToken?: Maybe<Scalars['String']>;
+}>;
+
+export type RefreshAccessTokenResponse = {
+  refreshAccessToken: {
+    accessToken?: Maybe<string>;
+    exp?: Maybe<number>;
+    iat?: Maybe<number>;
   };
 };
 
@@ -2509,23 +2707,11 @@ export type RegisterByEmailResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   }>;
 };
 
@@ -2578,23 +2764,11 @@ export type RegisterByPhoneCodeResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   }>;
 };
 
@@ -2647,23 +2821,11 @@ export type RegisterByUsernameResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   }>;
 };
 
@@ -2738,12 +2900,24 @@ export type RemoveMemberResponse = {
         locality?: Maybe<string>;
         region?: Maybe<string>;
         postalCode?: Maybe<string>;
+        city?: Maybe<string>;
+        province?: Maybe<string>;
         country?: Maybe<string>;
+        createdAt?: Maybe<string>;
         updatedAt?: Maybe<string>;
-        customData?: Maybe<string>;
       }>;
     };
   };
+};
+
+export type RemovePolicyAssignmentsVariables = Exact<{
+  policies: Array<Scalars['String']>;
+  targetType: PolicyAssignmentTargetType;
+  targetIdentifiers?: Maybe<Array<Scalars['String']>>;
+}>;
+
+export type RemovePolicyAssignmentsResponse = {
+  removePolicyAssignments: { message?: Maybe<string>; code?: Maybe<number> };
 };
 
 export type RemoveUdfVariables = Exact<{
@@ -2752,13 +2926,7 @@ export type RemoveUdfVariables = Exact<{
 }>;
 
 export type RemoveUdfResponse = {
-  removeUdf: Array<{
-    targetType: UdfTargetType;
-    dataType: UdfDataType;
-    key: string;
-    label: string;
-    options?: Maybe<string>;
-  }>;
+  removeUdf?: Maybe<{ message?: Maybe<string>; code?: Maybe<number> }>;
 };
 
 export type RemoveUdvVariables = Exact<{
@@ -2771,6 +2939,15 @@ export type RemoveUdvResponse = {
   removeUdv?: Maybe<
     Array<{ key: string; dataType: UdfDataType; value: string }>
   >;
+};
+
+export type RemoveUserFromGroupVariables = Exact<{
+  userIds: Array<Scalars['String']>;
+  code?: Maybe<Scalars['String']>;
+}>;
+
+export type RemoveUserFromGroupResponse = {
+  removeUserFromGroup: { message?: Maybe<string>; code?: Maybe<number> };
 };
 
 export type RemoveWhitelistVariables = Exact<{
@@ -2800,28 +2977,15 @@ export type ResetPasswordResponse = {
 };
 
 export type RevokeRoleVariables = Exact<{
-  code: Scalars['String'];
+  roleCode?: Maybe<Scalars['String']>;
+  roleCodes?: Maybe<Array<Maybe<Scalars['String']>>>;
   userIds?: Maybe<Array<Scalars['String']>>;
   groupCodes?: Maybe<Array<Scalars['String']>>;
   nodeCodes?: Maybe<Array<Scalars['String']>>;
 }>;
 
 export type RevokeRoleResponse = {
-  revokeRole: {
-    code: string;
-    description?: Maybe<string>;
-    isSystem?: Maybe<boolean>;
-    createdAt?: Maybe<string>;
-    updatedAt?: Maybe<string>;
-    users: { totalCount: number };
-    parent?: Maybe<{
-      code: string;
-      description?: Maybe<string>;
-      isSystem?: Maybe<boolean>;
-      createdAt?: Maybe<string>;
-      updatedAt?: Maybe<string>;
-    }>;
-  };
+  revokeRole?: Maybe<{ message?: Maybe<string>; code?: Maybe<number> }>;
 };
 
 export type SendEmailVariables = Exact<{
@@ -2833,6 +2997,24 @@ export type SendEmailResponse = {
   sendEmail: { message?: Maybe<string>; code?: Maybe<number> };
 };
 
+export type SetUdfVariables = Exact<{
+  targetType: UdfTargetType;
+  key: Scalars['String'];
+  dataType: UdfDataType;
+  label: Scalars['String'];
+  options?: Maybe<Scalars['String']>;
+}>;
+
+export type SetUdfResponse = {
+  setUdf: {
+    targetType: UdfTargetType;
+    dataType: UdfDataType;
+    key: string;
+    label: string;
+    options?: Maybe<string>;
+  };
+};
+
 export type SetUdvVariables = Exact<{
   targetType: UdfTargetType;
   targetId: Scalars['String'];
@@ -2842,6 +3024,61 @@ export type SetUdvVariables = Exact<{
 
 export type SetUdvResponse = {
   setUdv?: Maybe<Array<{ key: string; dataType: UdfDataType; value: string }>>;
+};
+
+export type UnbindEmailVariables = Exact<{ [key: string]: never }>;
+
+export type UnbindEmailResponse = {
+  unbindEmail: {
+    id: string;
+    arn: string;
+    userPoolId: string;
+    username?: Maybe<string>;
+    email?: Maybe<string>;
+    emailVerified?: Maybe<boolean>;
+    phone?: Maybe<string>;
+    phoneVerified?: Maybe<boolean>;
+    unionid?: Maybe<string>;
+    openid?: Maybe<string>;
+    nickname?: Maybe<string>;
+    registerSource: Array<string>;
+    photo?: Maybe<string>;
+    password?: Maybe<string>;
+    oauth?: Maybe<string>;
+    token?: Maybe<string>;
+    tokenExpiredAt?: Maybe<string>;
+    loginsCount?: Maybe<number>;
+    lastLogin?: Maybe<string>;
+    lastIP?: Maybe<string>;
+    signedUp?: Maybe<string>;
+    blocked?: Maybe<boolean>;
+    isDeleted?: Maybe<boolean>;
+    device?: Maybe<string>;
+    browser?: Maybe<string>;
+    company?: Maybe<string>;
+    name?: Maybe<string>;
+    givenName?: Maybe<string>;
+    familyName?: Maybe<string>;
+    middleName?: Maybe<string>;
+    profile?: Maybe<string>;
+    preferredUsername?: Maybe<string>;
+    website?: Maybe<string>;
+    gender?: Maybe<string>;
+    birthdate?: Maybe<string>;
+    zoneinfo?: Maybe<string>;
+    locale?: Maybe<string>;
+    address?: Maybe<string>;
+    formatted?: Maybe<string>;
+    streetAddress?: Maybe<string>;
+    locality?: Maybe<string>;
+    region?: Maybe<string>;
+    postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
+    country?: Maybe<string>;
+    createdAt?: Maybe<string>;
+    updatedAt?: Maybe<string>;
+  };
 };
 
 export type UnbindPhoneVariables = Exact<{ [key: string]: never }>;
@@ -2891,23 +3128,11 @@ export type UnbindPhoneResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   };
 };
 
@@ -2963,23 +3188,11 @@ export type UpdateEmailResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   };
 };
 
@@ -2994,6 +3207,23 @@ export type UpdateFunctionResponse = {
     sourceCode: string;
     description?: Maybe<string>;
     url?: Maybe<string>;
+  };
+};
+
+export type UpdateGroupVariables = Exact<{
+  code: Scalars['String'];
+  name?: Maybe<Scalars['String']>;
+  description?: Maybe<Scalars['String']>;
+  newCode?: Maybe<Scalars['String']>;
+}>;
+
+export type UpdateGroupResponse = {
+  updateGroup: {
+    code: string;
+    name: string;
+    description?: Maybe<string>;
+    createdAt?: Maybe<string>;
+    updatedAt?: Maybe<string>;
   };
 };
 
@@ -3077,23 +3307,11 @@ export type UpdatePasswordResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   };
 };
 
@@ -3149,23 +3367,34 @@ export type UpdatePhoneResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
+  };
+};
+
+export type UpdatePolicyVariables = Exact<{
+  code: Scalars['String'];
+  description?: Maybe<Scalars['String']>;
+  statements?: Maybe<Array<PolicyStatementInput>>;
+  newCode?: Maybe<Scalars['String']>;
+}>;
+
+export type UpdatePolicyResponse = {
+  updatePolicy: {
+    code: string;
+    isDefault: boolean;
+    description?: Maybe<string>;
+    createdAt?: Maybe<string>;
+    updatedAt?: Maybe<string>;
+    assignmentsCount: number;
+    statements: Array<{
+      resource: string;
+      actions: Array<string>;
+      effect?: Maybe<PolicyEffect>;
+    }>;
   };
 };
 
@@ -3178,6 +3407,7 @@ export type UpdateRoleVariables = Exact<{
 export type UpdateRoleResponse = {
   updateRole: {
     code: string;
+    arn: string;
     description?: Maybe<string>;
     isSystem?: Maybe<boolean>;
     createdAt?: Maybe<string>;
@@ -3185,6 +3415,7 @@ export type UpdateRoleResponse = {
     users: { totalCount: number };
     parent?: Maybe<{
       code: string;
+      arn: string;
       description?: Maybe<string>;
       isSystem?: Maybe<boolean>;
       createdAt?: Maybe<string>;
@@ -3243,23 +3474,11 @@ export type UpdateUserResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   };
 };
 
@@ -3274,6 +3493,7 @@ export type UpdateUserpoolResponse = {
     domain: string;
     description?: Maybe<string>;
     secret: string;
+    jwtSecret: string;
     logo: string;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
@@ -3320,25 +3540,43 @@ export type UpdateUserpoolResponse = {
       emailEnabled?: Maybe<boolean>;
       usernameEnabled?: Maybe<boolean>;
     }>;
+    customSMSProvider?: Maybe<{
+      enabled?: Maybe<boolean>;
+      provider?: Maybe<string>;
+    }>;
   };
 };
 
-export type AddUserToGroupVariables = Exact<{
-  userId?: Maybe<Scalars['String']>;
-  groupId?: Maybe<Scalars['String']>;
+export type AccessTokenVariables = Exact<{
+  userPoolId: Scalars['String'];
+  secret: Scalars['String'];
 }>;
 
-export type AddUserToGroupResponse = {
-  addUserToGroup: {
-    totalCount: number;
-    list: Array<{
-      code: string;
-      name: string;
-      description?: Maybe<string>;
-      createdAt?: Maybe<string>;
-      updatedAt?: Maybe<string>;
-    }>;
+export type AccessTokenResponse = {
+  accessToken: {
+    accessToken?: Maybe<string>;
+    exp?: Maybe<number>;
+    iat?: Maybe<number>;
   };
+};
+
+export type CheckLoginStatusVariables = Exact<{
+  token?: Maybe<Scalars['String']>;
+}>;
+
+export type CheckLoginStatusResponse = {
+  checkLoginStatus?: Maybe<{
+    code?: Maybe<number>;
+    message?: Maybe<string>;
+    status?: Maybe<boolean>;
+    exp?: Maybe<number>;
+    iat?: Maybe<number>;
+    data?: Maybe<{
+      id?: Maybe<string>;
+      userPoolId?: Maybe<string>;
+      arn?: Maybe<string>;
+    }>;
+  }>;
 };
 
 export type CheckPasswordStrengthVariables = Exact<{
@@ -3389,6 +3627,65 @@ export type EmailTemplatesResponse = {
   }>;
 };
 
+export type FindUserVariables = Exact<{
+  email?: Maybe<Scalars['String']>;
+  phone?: Maybe<Scalars['String']>;
+  username?: Maybe<Scalars['String']>;
+}>;
+
+export type FindUserResponse = {
+  findUser?: Maybe<{
+    id: string;
+    arn: string;
+    userPoolId: string;
+    username?: Maybe<string>;
+    email?: Maybe<string>;
+    emailVerified?: Maybe<boolean>;
+    phone?: Maybe<string>;
+    phoneVerified?: Maybe<boolean>;
+    unionid?: Maybe<string>;
+    openid?: Maybe<string>;
+    nickname?: Maybe<string>;
+    registerSource: Array<string>;
+    photo?: Maybe<string>;
+    password?: Maybe<string>;
+    oauth?: Maybe<string>;
+    token?: Maybe<string>;
+    tokenExpiredAt?: Maybe<string>;
+    loginsCount?: Maybe<number>;
+    lastLogin?: Maybe<string>;
+    lastIP?: Maybe<string>;
+    signedUp?: Maybe<string>;
+    blocked?: Maybe<boolean>;
+    isDeleted?: Maybe<boolean>;
+    device?: Maybe<string>;
+    browser?: Maybe<string>;
+    company?: Maybe<string>;
+    name?: Maybe<string>;
+    givenName?: Maybe<string>;
+    familyName?: Maybe<string>;
+    middleName?: Maybe<string>;
+    profile?: Maybe<string>;
+    preferredUsername?: Maybe<string>;
+    website?: Maybe<string>;
+    gender?: Maybe<string>;
+    birthdate?: Maybe<string>;
+    zoneinfo?: Maybe<string>;
+    locale?: Maybe<string>;
+    address?: Maybe<string>;
+    formatted?: Maybe<string>;
+    streetAddress?: Maybe<string>;
+    locality?: Maybe<string>;
+    region?: Maybe<string>;
+    postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
+    country?: Maybe<string>;
+    createdAt?: Maybe<string>;
+    updatedAt?: Maybe<string>;
+  }>;
+};
+
 export type FunctionVariables = Exact<{
   id?: Maybe<Scalars['String']>;
 }>;
@@ -3422,6 +3719,25 @@ export type FunctionsResponse = {
   };
 };
 
+export type GetUserGroupsVariables = Exact<{
+  id: Scalars['String'];
+}>;
+
+export type GetUserGroupsResponse = {
+  user?: Maybe<{
+    groups?: Maybe<{
+      totalCount: number;
+      list: Array<{
+        code: string;
+        name: string;
+        description?: Maybe<string>;
+        createdAt?: Maybe<string>;
+        updatedAt?: Maybe<string>;
+      }>;
+    }>;
+  }>;
+};
+
 export type GetUserRolesVariables = Exact<{
   id: Scalars['String'];
 }>;
@@ -3446,6 +3762,84 @@ export type GetUserRolesResponse = {
         }>;
       }>;
     }>;
+  }>;
+};
+
+export type GroupVariables = Exact<{
+  code: Scalars['String'];
+}>;
+
+export type GroupResponse = {
+  group?: Maybe<{
+    code: string;
+    name: string;
+    description?: Maybe<string>;
+    createdAt?: Maybe<string>;
+    updatedAt?: Maybe<string>;
+  }>;
+};
+
+export type GroupWithUsersVariables = Exact<{
+  code: Scalars['String'];
+  page?: Maybe<Scalars['Int']>;
+  limit?: Maybe<Scalars['Int']>;
+}>;
+
+export type GroupWithUsersResponse = {
+  group?: Maybe<{
+    users: {
+      totalCount: number;
+      list: Array<{
+        id: string;
+        arn: string;
+        userPoolId: string;
+        username?: Maybe<string>;
+        email?: Maybe<string>;
+        emailVerified?: Maybe<boolean>;
+        phone?: Maybe<string>;
+        phoneVerified?: Maybe<boolean>;
+        unionid?: Maybe<string>;
+        openid?: Maybe<string>;
+        nickname?: Maybe<string>;
+        registerSource: Array<string>;
+        photo?: Maybe<string>;
+        password?: Maybe<string>;
+        oauth?: Maybe<string>;
+        token?: Maybe<string>;
+        tokenExpiredAt?: Maybe<string>;
+        loginsCount?: Maybe<number>;
+        lastLogin?: Maybe<string>;
+        lastIP?: Maybe<string>;
+        signedUp?: Maybe<string>;
+        blocked?: Maybe<boolean>;
+        isDeleted?: Maybe<boolean>;
+        device?: Maybe<string>;
+        browser?: Maybe<string>;
+        company?: Maybe<string>;
+        name?: Maybe<string>;
+        givenName?: Maybe<string>;
+        familyName?: Maybe<string>;
+        middleName?: Maybe<string>;
+        profile?: Maybe<string>;
+        preferredUsername?: Maybe<string>;
+        website?: Maybe<string>;
+        gender?: Maybe<string>;
+        birthdate?: Maybe<string>;
+        zoneinfo?: Maybe<string>;
+        locale?: Maybe<string>;
+        address?: Maybe<string>;
+        formatted?: Maybe<string>;
+        streetAddress?: Maybe<string>;
+        locality?: Maybe<string>;
+        region?: Maybe<string>;
+        postalCode?: Maybe<string>;
+        city?: Maybe<string>;
+        province?: Maybe<string>;
+        country?: Maybe<string>;
+        createdAt?: Maybe<string>;
+        updatedAt?: Maybe<string>;
+      }>;
+    };
   }>;
 };
 
@@ -3490,6 +3884,21 @@ export type IsDomainAvaliableVariables = Exact<{
 }>;
 
 export type IsDomainAvaliableResponse = { isDomainAvaliable?: Maybe<boolean> };
+
+export type IsRootNodeVariables = Exact<{
+  nodeId: Scalars['String'];
+  orgId: Scalars['String'];
+}>;
+
+export type IsRootNodeResponse = { isRootNode?: Maybe<boolean> };
+
+export type IsUserExistsVariables = Exact<{
+  email?: Maybe<Scalars['String']>;
+  phone?: Maybe<Scalars['String']>;
+  username?: Maybe<Scalars['String']>;
+}>;
+
+export type IsUserExistsResponse = { isUserExists?: Maybe<boolean> };
 
 export type NodeByCodeVariables = Exact<{
   orgId: Scalars['String'];
@@ -3583,9 +3992,11 @@ export type NodeByCodeWithMembersResponse = {
         locality?: Maybe<string>;
         region?: Maybe<string>;
         postalCode?: Maybe<string>;
+        city?: Maybe<string>;
+        province?: Maybe<string>;
         country?: Maybe<string>;
+        createdAt?: Maybe<string>;
         updatedAt?: Maybe<string>;
-        customData?: Maybe<string>;
       }>;
     };
   }>;
@@ -3681,9 +4092,11 @@ export type NodeByIdWithMembersResponse = {
         locality?: Maybe<string>;
         region?: Maybe<string>;
         postalCode?: Maybe<string>;
+        city?: Maybe<string>;
+        province?: Maybe<string>;
         country?: Maybe<string>;
+        createdAt?: Maybe<string>;
         updatedAt?: Maybe<string>;
-        customData?: Maybe<string>;
       }>;
     };
   }>;
@@ -3774,20 +4187,95 @@ export type OrgsResponse = {
   };
 };
 
-export type PoliciesVariables = Exact<{ [key: string]: never }>;
+export type PoliciesVariables = Exact<{
+  page?: Maybe<Scalars['Int']>;
+  limit?: Maybe<Scalars['Int']>;
+  excludeDefault?: Maybe<Scalars['Boolean']>;
+}>;
 
 export type PoliciesResponse = {
   policies: {
     totalCount: number;
     list: Array<{
       code: string;
-      resource: string;
-      actions: Array<string>;
-      effect: PolicyEffect;
+      isDefault: boolean;
+      description?: Maybe<string>;
       createdAt?: Maybe<string>;
       updatedAt?: Maybe<string>;
+      assignmentsCount: number;
+      statements: Array<{
+        resource: string;
+        actions: Array<string>;
+        effect?: Maybe<PolicyEffect>;
+      }>;
     }>;
   };
+};
+
+export type PolicyVariables = Exact<{
+  code: Scalars['String'];
+}>;
+
+export type PolicyResponse = {
+  policy?: Maybe<{
+    code: string;
+    assignmentsCount: number;
+    isDefault: boolean;
+    description?: Maybe<string>;
+    createdAt?: Maybe<string>;
+    updatedAt?: Maybe<string>;
+    statements: Array<{
+      resource: string;
+      actions: Array<string>;
+      effect?: Maybe<PolicyEffect>;
+    }>;
+  }>;
+};
+
+export type PolicyAssignmentsVariables = Exact<{
+  code?: Maybe<Scalars['String']>;
+  targetType?: Maybe<PolicyAssignmentTargetType>;
+  targetIdentifier?: Maybe<Scalars['String']>;
+  page?: Maybe<Scalars['Int']>;
+  limit?: Maybe<Scalars['Int']>;
+}>;
+
+export type PolicyAssignmentsResponse = {
+  policyAssignments: {
+    totalCount: number;
+    list: Array<{
+      code: string;
+      targetType: PolicyAssignmentTargetType;
+      targetIdentifier: string;
+    }>;
+  };
+};
+
+export type PolicyWithAssignmentsVariables = Exact<{
+  page?: Maybe<Scalars['Int']>;
+  limit?: Maybe<Scalars['Int']>;
+  code: Scalars['String'];
+}>;
+
+export type PolicyWithAssignmentsResponse = {
+  policy?: Maybe<{
+    code: string;
+    isDefault: boolean;
+    description?: Maybe<string>;
+    createdAt?: Maybe<string>;
+    updatedAt?: Maybe<string>;
+    assignmentsCount: number;
+    statements: Array<{
+      resource: string;
+      actions: Array<string>;
+      effect?: Maybe<PolicyEffect>;
+    }>;
+    assignments: Array<{
+      code: string;
+      targetType: PolicyAssignmentTargetType;
+      targetIdentifier: string;
+    }>;
+  }>;
 };
 
 export type PreviewEmailVariables = Exact<{
@@ -3823,21 +4311,23 @@ export type RoleVariables = Exact<{
 }>;
 
 export type RoleResponse = {
-  role: {
+  role?: Maybe<{
     code: string;
     arn: string;
     description?: Maybe<string>;
     isSystem?: Maybe<boolean>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
+    users: { totalCount: number };
     parent?: Maybe<{
       code: string;
+      arn: string;
       description?: Maybe<string>;
       isSystem?: Maybe<boolean>;
       createdAt?: Maybe<string>;
       updatedAt?: Maybe<string>;
     }>;
-  };
+  }>;
 };
 
 export type RoleWithUsersVariables = Exact<{
@@ -3845,24 +4335,12 @@ export type RoleWithUsersVariables = Exact<{
 }>;
 
 export type RoleWithUsersResponse = {
-  role: {
-    code: string;
-    arn: string;
-    description?: Maybe<string>;
-    isSystem?: Maybe<boolean>;
-    createdAt?: Maybe<string>;
-    updatedAt?: Maybe<string>;
-    parent?: Maybe<{
-      code: string;
-      description?: Maybe<string>;
-      isSystem?: Maybe<boolean>;
-      createdAt?: Maybe<string>;
-      updatedAt?: Maybe<string>;
-    }>;
+  role?: Maybe<{
     users: {
       totalCount: number;
       list: Array<{
         id: string;
+        arn: string;
         userPoolId: string;
         username?: Maybe<string>;
         email?: Maybe<string>;
@@ -3904,12 +4382,14 @@ export type RoleWithUsersResponse = {
         locality?: Maybe<string>;
         region?: Maybe<string>;
         postalCode?: Maybe<string>;
+        city?: Maybe<string>;
+        province?: Maybe<string>;
         country?: Maybe<string>;
+        createdAt?: Maybe<string>;
         updatedAt?: Maybe<string>;
-        customData?: Maybe<string>;
       }>;
     };
-  };
+  }>;
 };
 
 export type RolesVariables = Exact<{
@@ -3936,6 +4416,33 @@ export type RolesResponse = {
         updatedAt?: Maybe<string>;
       }>;
     }>;
+  };
+};
+
+export type RootNodeVariables = Exact<{
+  page?: Maybe<Scalars['Int']>;
+  limit?: Maybe<Scalars['Int']>;
+  sortBy?: Maybe<SortByEnum>;
+  includeChildrenNodes?: Maybe<Scalars['Boolean']>;
+  orgId: Scalars['String'];
+}>;
+
+export type RootNodeResponse = {
+  rootNode: {
+    id: string;
+    name: string;
+    nameI18n?: Maybe<string>;
+    description?: Maybe<string>;
+    descriptionI18n?: Maybe<string>;
+    order?: Maybe<number>;
+    code?: Maybe<string>;
+    root?: Maybe<boolean>;
+    depth?: Maybe<number>;
+    path: Array<string>;
+    createdAt?: Maybe<string>;
+    updatedAt?: Maybe<string>;
+    children?: Maybe<Array<string>>;
+    users: { totalCount: number };
   };
 };
 
@@ -3993,10 +4500,11 @@ export type SearchUserResponse = {
       locality?: Maybe<string>;
       region?: Maybe<string>;
       postalCode?: Maybe<string>;
+      city?: Maybe<string>;
+      province?: Maybe<string>;
       country?: Maybe<string>;
       createdAt?: Maybe<string>;
       updatedAt?: Maybe<string>;
-      customData?: Maybe<string>;
     }>;
   };
 };
@@ -4141,23 +4649,11 @@ export type UserResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   }>;
 };
 
@@ -4210,23 +4706,11 @@ export type UserBatchResponse = {
     locality?: Maybe<string>;
     region?: Maybe<string>;
     postalCode?: Maybe<string>;
+    city?: Maybe<string>;
+    province?: Maybe<string>;
     country?: Maybe<string>;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
-    customData?: Maybe<string>;
-    identities?: Maybe<
-      Array<
-        Maybe<{
-          openid?: Maybe<string>;
-          userIdInIdp?: Maybe<string>;
-          userId?: Maybe<string>;
-          connectionId?: Maybe<string>;
-          isSocial?: Maybe<boolean>;
-          provider?: Maybe<string>;
-          userPoolId?: Maybe<string>;
-        }>
-      >
-    >;
   }>;
 };
 
@@ -4285,6 +4769,10 @@ export type UserpoolResponse = {
       phoneEnabled?: Maybe<boolean>;
       emailEnabled?: Maybe<boolean>;
       usernameEnabled?: Maybe<boolean>;
+    }>;
+    customSMSProvider?: Maybe<{
+      enabled?: Maybe<boolean>;
+      provider?: Maybe<string>;
     }>;
   };
 };
@@ -4384,10 +4872,11 @@ export type UsersResponse = {
       locality?: Maybe<string>;
       region?: Maybe<string>;
       postalCode?: Maybe<string>;
+      city?: Maybe<string>;
+      province?: Maybe<string>;
       country?: Maybe<string>;
       createdAt?: Maybe<string>;
       updatedAt?: Maybe<string>;
-      customData?: Maybe<string>;
     }>;
   };
 };
@@ -4466,9 +4955,11 @@ export const AddMemberDocument = `
         locality
         region
         postalCode
+        city
+        province
         country
+        createdAt
         updatedAt
-        customData
       }
     }
   }
@@ -4511,14 +5002,19 @@ export const AddNodeDocument = `
   }
 }
     `;
-export const AddUdfDocument = `
-    mutation addUdf($targetType: UDFTargetType!, $key: String!, $dataType: UDFDataType!, $label: String!, $options: String) {
-  addUdf(targetType: $targetType, key: $key, dataType: $dataType, label: $label, options: $options) {
-    targetType
-    dataType
-    key
-    label
-    options
+export const AddPolicyAssignmentsDocument = `
+    mutation addPolicyAssignments($policies: [String!]!, $targetType: PolicyAssignmentTargetType!, $targetIdentifiers: [String!]) {
+  addPolicyAssignments(policies: $policies, targetType: $targetType, targetIdentifiers: $targetIdentifiers) {
+    message
+    code
+  }
+}
+    `;
+export const AddUserToGroupDocument = `
+    mutation addUserToGroup($userIds: [String!]!, $code: String) {
+  addUserToGroup(userIds: $userIds, code: $code) {
+    message
+    code
   }
 }
     `;
@@ -4540,24 +5036,10 @@ export const AllowDocument = `
 }
     `;
 export const AssignRoleDocument = `
-    mutation assignRole($code: String!, $userIds: [String!], $groupCodes: [String!], $nodeCodes: [String!]) {
-  assignRole(code: $code, userIds: $userIds, groupCodes: $groupCodes, nodeCodes: $nodeCodes) {
+    mutation assignRole($roleCode: String, $roleCodes: [String], $userIds: [String!], $groupCodes: [String!], $nodeCodes: [String!]) {
+  assignRole(roleCode: $roleCode, roleCodes: $roleCodes, userIds: $userIds, groupCodes: $groupCodes, nodeCodes: $nodeCodes) {
+    message
     code
-    arn
-    description
-    isSystem
-    createdAt
-    updatedAt
-    users {
-      totalCount
-    }
-    parent {
-      code
-      description
-      isSystem
-      createdAt
-      updatedAt
-    }
   }
 }
     `;
@@ -4574,15 +5056,6 @@ export const BindPhoneDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -4616,10 +5089,11 @@ export const BindPhoneDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -4661,6 +5135,17 @@ export const CreateFunctionDocument = `
   }
 }
     `;
+export const CreateGroupDocument = `
+    mutation createGroup($code: String!, $name: String!, $description: String) {
+  createGroup(code: $code, name: $name, description: $description) {
+    code
+    name
+    description
+    createdAt
+    updatedAt
+  }
+}
+    `;
 export const CreateOrgDocument = `
     mutation createOrg($name: String!, $code: String, $description: String) {
   createOrg(name: $name, code: $code, description: $description) {
@@ -4699,12 +5184,17 @@ export const CreateOrgDocument = `
 }
     `;
 export const CreatePolicyDocument = `
-    mutation createPolicy($code: String!, $resource: String!, $actions: [String!]!, $effect: PolicyEffect!) {
-  createPolicy(code: $code, resource: $resource, actions: $actions, effect: $effect) {
+    mutation createPolicy($code: String!, $description: String, $statements: [PolicyStatementInput!]!) {
+  createPolicy(code: $code, description: $description, statements: $statements) {
     code
-    resource
-    actions
-    effect
+    assignmentsCount
+    isDefault
+    description
+    statements {
+      resource
+      actions
+      effect
+    }
     createdAt
     updatedAt
   }
@@ -4719,11 +5209,9 @@ export const CreateRoleDocument = `
     isSystem
     createdAt
     updatedAt
-    users {
-      totalCount
-    }
     parent {
       code
+      arn
       description
       isSystem
       createdAt
@@ -4773,15 +5261,6 @@ export const CreateUserDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -4815,10 +5294,11 @@ export const CreateUserDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -4830,6 +5310,7 @@ export const CreateUserpoolDocument = `
     domain
     description
     secret
+    jwtSecret
     userpoolTypes {
       code
       name
@@ -4878,12 +5359,24 @@ export const CreateUserpoolDocument = `
       emailEnabled
       usernameEnabled
     }
+    customSMSProvider {
+      enabled
+      provider
+    }
   }
 }
     `;
 export const DeleteFunctionDocument = `
     mutation deleteFunction($id: String!) {
   deleteFunction(id: $id) {
+    message
+    code
+  }
+}
+    `;
+export const DeleteGroupsDocument = `
+    mutation deleteGroups($codeList: [String!]!) {
+  deleteGroups(codeList: $codeList) {
     message
     code
   }
@@ -4905,6 +5398,22 @@ export const DeleteOrgDocument = `
   }
 }
     `;
+export const DeletePoliciesDocument = `
+    mutation deletePolicies($codeList: [String!]!) {
+  deletePolicies(codeList: $codeList) {
+    message
+    code
+  }
+}
+    `;
+export const DeletePolicyDocument = `
+    mutation deletePolicy($code: String!) {
+  deletePolicy(code: $code) {
+    message
+    code
+  }
+}
+    `;
 export const DeleteRoleDocument = `
     mutation deleteRole($code: String!) {
   deleteRole(code: $code) {
@@ -4914,12 +5423,10 @@ export const DeleteRoleDocument = `
 }
     `;
 export const DeleteRolesDocument = `
-    mutation deleteRoles($codes: [String!]!) {
-  deleteRoles(codes: $codes) {
-    succeedCount
-    failedCount
+    mutation deleteRoles($codeList: [String!]!) {
+  deleteRoles(codeList: $codeList) {
     message
-    errors
+    code
   }
 }
     `;
@@ -5016,15 +5523,6 @@ export const LoginByEmailDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -5058,10 +5556,11 @@ export const LoginByEmailDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -5078,15 +5577,6 @@ export const LoginByPhoneCodeDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -5120,10 +5610,11 @@ export const LoginByPhoneCodeDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -5140,15 +5631,6 @@ export const LoginByPhonePasswordDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -5182,10 +5664,11 @@ export const LoginByPhonePasswordDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -5202,15 +5685,6 @@ export const LoginByUsernameDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -5244,10 +5718,11 @@ export const LoginByUsernameDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -5288,6 +5763,15 @@ export const MoveNodeDocument = `
   }
 }
     `;
+export const RefreshAccessTokenDocument = `
+    mutation refreshAccessToken($accessToken: String) {
+  refreshAccessToken(accessToken: $accessToken) {
+    accessToken
+    exp
+    iat
+  }
+}
+    `;
 export const RefreshTokenDocument = `
     mutation refreshToken($id: String) {
   refreshToken(id: $id) {
@@ -5315,15 +5799,6 @@ export const RegisterByEmailDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -5357,10 +5832,11 @@ export const RegisterByEmailDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -5377,15 +5853,6 @@ export const RegisterByPhoneCodeDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -5419,10 +5886,11 @@ export const RegisterByPhoneCodeDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -5439,15 +5907,6 @@ export const RegisterByUsernameDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -5481,10 +5940,11 @@ export const RegisterByUsernameDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -5549,22 +6009,29 @@ export const RemoveMemberDocument = `
         locality
         region
         postalCode
+        city
+        province
         country
+        createdAt
         updatedAt
-        customData
       }
     }
+  }
+}
+    `;
+export const RemovePolicyAssignmentsDocument = `
+    mutation removePolicyAssignments($policies: [String!]!, $targetType: PolicyAssignmentTargetType!, $targetIdentifiers: [String!]) {
+  removePolicyAssignments(policies: $policies, targetType: $targetType, targetIdentifiers: $targetIdentifiers) {
+    message
+    code
   }
 }
     `;
 export const RemoveUdfDocument = `
     mutation removeUdf($targetType: UDFTargetType!, $key: String!) {
   removeUdf(targetType: $targetType, key: $key) {
-    targetType
-    dataType
-    key
-    label
-    options
+    message
+    code
   }
 }
     `;
@@ -5574,6 +6041,14 @@ export const RemoveUdvDocument = `
     key
     dataType
     value
+  }
+}
+    `;
+export const RemoveUserFromGroupDocument = `
+    mutation removeUserFromGroup($userIds: [String!]!, $code: String) {
+  removeUserFromGroup(userIds: $userIds, code: $code) {
+    message
+    code
   }
 }
     `;
@@ -5595,23 +6070,10 @@ export const ResetPasswordDocument = `
 }
     `;
 export const RevokeRoleDocument = `
-    mutation revokeRole($code: String!, $userIds: [String!], $groupCodes: [String!], $nodeCodes: [String!]) {
-  revokeRole(code: $code, userIds: $userIds, groupCodes: $groupCodes, nodeCodes: $nodeCodes) {
+    mutation revokeRole($roleCode: String, $roleCodes: [String], $userIds: [String!], $groupCodes: [String!], $nodeCodes: [String!]) {
+  revokeRole(roleCode: $roleCode, roleCodes: $roleCodes, userIds: $userIds, groupCodes: $groupCodes, nodeCodes: $nodeCodes) {
+    message
     code
-    description
-    isSystem
-    createdAt
-    updatedAt
-    users {
-      totalCount
-    }
-    parent {
-      code
-      description
-      isSystem
-      createdAt
-      updatedAt
-    }
   }
 }
     `;
@@ -5623,12 +6085,77 @@ export const SendEmailDocument = `
   }
 }
     `;
+export const SetUdfDocument = `
+    mutation setUdf($targetType: UDFTargetType!, $key: String!, $dataType: UDFDataType!, $label: String!, $options: String) {
+  setUdf(targetType: $targetType, key: $key, dataType: $dataType, label: $label, options: $options) {
+    targetType
+    dataType
+    key
+    label
+    options
+  }
+}
+    `;
 export const SetUdvDocument = `
     mutation setUdv($targetType: UDFTargetType!, $targetId: String!, $key: String!, $value: String!) {
   setUdv(targetType: $targetType, targetId: $targetId, key: $key, value: $value) {
     key
     dataType
     value
+  }
+}
+    `;
+export const UnbindEmailDocument = `
+    mutation unbindEmail {
+  unbindEmail {
+    id
+    arn
+    userPoolId
+    username
+    email
+    emailVerified
+    phone
+    phoneVerified
+    unionid
+    openid
+    nickname
+    registerSource
+    photo
+    password
+    oauth
+    token
+    tokenExpiredAt
+    loginsCount
+    lastLogin
+    lastIP
+    signedUp
+    blocked
+    isDeleted
+    device
+    browser
+    company
+    name
+    givenName
+    familyName
+    middleName
+    profile
+    preferredUsername
+    website
+    gender
+    birthdate
+    zoneinfo
+    locale
+    address
+    formatted
+    streetAddress
+    locality
+    region
+    postalCode
+    city
+    province
+    country
+    createdAt
+    updatedAt
   }
 }
     `;
@@ -5645,15 +6172,6 @@ export const UnbindPhoneDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -5687,10 +6205,11 @@ export const UnbindPhoneDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -5707,15 +6226,6 @@ export const UpdateEmailDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -5749,10 +6259,11 @@ export const UpdateEmailDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -5764,6 +6275,17 @@ export const UpdateFunctionDocument = `
     sourceCode
     description
     url
+  }
+}
+    `;
+export const UpdateGroupDocument = `
+    mutation updateGroup($code: String!, $name: String, $description: String, $newCode: String) {
+  updateGroup(code: $code, name: $name, description: $description, newCode: $newCode) {
+    code
+    name
+    description
+    createdAt
+    updatedAt
   }
 }
     `;
@@ -5802,15 +6324,6 @@ export const UpdatePasswordDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -5844,10 +6357,11 @@ export const UpdatePasswordDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -5864,15 +6378,6 @@ export const UpdatePhoneDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -5906,10 +6411,28 @@ export const UpdatePhoneDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
+  }
+}
+    `;
+export const UpdatePolicyDocument = `
+    mutation updatePolicy($code: String!, $description: String, $statements: [PolicyStatementInput!], $newCode: String) {
+  updatePolicy(code: $code, description: $description, statements: $statements, newCode: $newCode) {
+    code
+    isDefault
+    description
+    statements {
+      resource
+      actions
+      effect
+    }
+    createdAt
+    updatedAt
+    assignmentsCount
   }
 }
     `;
@@ -5917,6 +6440,7 @@ export const UpdateRoleDocument = `
     mutation updateRole($code: String!, $description: String, $newCode: String) {
   updateRole(code: $code, description: $description, newCode: $newCode) {
     code
+    arn
     description
     isSystem
     createdAt
@@ -5926,6 +6450,7 @@ export const UpdateRoleDocument = `
     }
     parent {
       code
+      arn
       description
       isSystem
       createdAt
@@ -5947,15 +6472,6 @@ export const UpdateUserDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -5989,10 +6505,11 @@ export const UpdateUserDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -6004,6 +6521,7 @@ export const UpdateUserpoolDocument = `
     domain
     description
     secret
+    jwtSecret
     userpoolTypes {
       code
       name
@@ -6052,19 +6570,34 @@ export const UpdateUserpoolDocument = `
       emailEnabled
       usernameEnabled
     }
+    customSMSProvider {
+      enabled
+      provider
+    }
   }
 }
     `;
-export const AddUserToGroupDocument = `
-    query addUserToGroup($userId: String, $groupId: String) {
-  addUserToGroup(userId: $userId, groupId: $groupId) {
-    totalCount
-    list {
-      code
-      name
-      description
-      createdAt
-      updatedAt
+export const AccessTokenDocument = `
+    query accessToken($userPoolId: String!, $secret: String!) {
+  accessToken(userPoolId: $userPoolId, secret: $secret) {
+    accessToken
+    exp
+    iat
+  }
+}
+    `;
+export const CheckLoginStatusDocument = `
+    query checkLoginStatus($token: String) {
+  checkLoginStatus(token: $token) {
+    code
+    message
+    status
+    exp
+    iat
+    data {
+      id
+      userPoolId
+      arn
     }
   }
 }
@@ -6112,6 +6645,60 @@ export const EmailTemplatesDocument = `
   }
 }
     `;
+export const FindUserDocument = `
+    query findUser($email: String, $phone: String, $username: String) {
+  findUser(email: $email, phone: $phone, username: $username) {
+    id
+    arn
+    userPoolId
+    username
+    email
+    emailVerified
+    phone
+    phoneVerified
+    unionid
+    openid
+    nickname
+    registerSource
+    photo
+    password
+    oauth
+    token
+    tokenExpiredAt
+    loginsCount
+    lastLogin
+    lastIP
+    signedUp
+    blocked
+    isDeleted
+    device
+    browser
+    company
+    name
+    givenName
+    familyName
+    middleName
+    profile
+    preferredUsername
+    website
+    gender
+    birthdate
+    zoneinfo
+    locale
+    address
+    formatted
+    streetAddress
+    locality
+    region
+    postalCode
+    city
+    province
+    country
+    createdAt
+    updatedAt
+  }
+}
+    `;
 export const FunctionDocument = `
     query function($id: String) {
   function(id: $id) {
@@ -6137,6 +6724,22 @@ export const FunctionsDocument = `
   }
 }
     `;
+export const GetUserGroupsDocument = `
+    query getUserGroups($id: String!) {
+  user(id: $id) {
+    groups {
+      totalCount
+      list {
+        code
+        name
+        description
+        createdAt
+        updatedAt
+      }
+    }
+  }
+}
+    `;
 export const GetUserRolesDocument = `
     query getUserRoles($id: String!) {
   user(id: $id) {
@@ -6156,6 +6759,76 @@ export const GetUserRolesDocument = `
           createdAt
           updatedAt
         }
+      }
+    }
+  }
+}
+    `;
+export const GroupDocument = `
+    query group($code: String!) {
+  group(code: $code) {
+    code
+    name
+    description
+    createdAt
+    updatedAt
+  }
+}
+    `;
+export const GroupWithUsersDocument = `
+    query groupWithUsers($code: String!, $page: Int, $limit: Int) {
+  group(code: $code) {
+    users(page: $page, limit: $limit) {
+      totalCount
+      list {
+        id
+        arn
+        userPoolId
+        username
+        email
+        emailVerified
+        phone
+        phoneVerified
+        unionid
+        openid
+        nickname
+        registerSource
+        photo
+        password
+        oauth
+        token
+        tokenExpiredAt
+        loginsCount
+        lastLogin
+        lastIP
+        signedUp
+        blocked
+        isDeleted
+        device
+        browser
+        company
+        name
+        givenName
+        familyName
+        middleName
+        profile
+        preferredUsername
+        website
+        gender
+        birthdate
+        zoneinfo
+        locale
+        address
+        formatted
+        streetAddress
+        locality
+        region
+        postalCode
+        city
+        province
+        country
+        createdAt
+        updatedAt
       }
     }
   }
@@ -6188,6 +6861,16 @@ export const IsActionDeniedDocument = `
 export const IsDomainAvaliableDocument = `
     query isDomainAvaliable($domain: String!) {
   isDomainAvaliable(domain: $domain)
+}
+    `;
+export const IsRootNodeDocument = `
+    query isRootNode($nodeId: String!, $orgId: String!) {
+  isRootNode(nodeId: $nodeId, orgId: $orgId)
+}
+    `;
+export const IsUserExistsDocument = `
+    query isUserExists($email: String, $phone: String, $username: String) {
+  isUserExists(email: $email, phone: $phone, username: $username)
 }
     `;
 export const NodeByCodeDocument = `
@@ -6270,9 +6953,11 @@ export const NodeByCodeWithMembersDocument = `
         locality
         region
         postalCode
+        city
+        province
         country
+        createdAt
         updatedAt
-        customData
       }
     }
   }
@@ -6358,9 +7043,11 @@ export const NodeByIdWithMembersDocument = `
         locality
         region
         postalCode
+        city
+        province
         country
+        createdAt
         updatedAt
-        customData
       }
     }
   }
@@ -6444,16 +7131,72 @@ export const OrgsDocument = `
 }
     `;
 export const PoliciesDocument = `
-    query policies {
-  policies {
+    query policies($page: Int, $limit: Int, $excludeDefault: Boolean) {
+  policies(page: $page, limit: $limit, excludeDefault: $excludeDefault) {
     totalCount
     list {
       code
+      isDefault
+      description
+      createdAt
+      updatedAt
+      assignmentsCount
+      statements {
+        resource
+        actions
+        effect
+      }
+    }
+  }
+}
+    `;
+export const PolicyDocument = `
+    query policy($code: String!) {
+  policy(code: $code) {
+    code
+    assignmentsCount
+    isDefault
+    description
+    statements {
       resource
       actions
       effect
-      createdAt
-      updatedAt
+    }
+    createdAt
+    updatedAt
+  }
+}
+    `;
+export const PolicyAssignmentsDocument = `
+    query policyAssignments($code: String, $targetType: PolicyAssignmentTargetType, $targetIdentifier: String, $page: Int, $limit: Int) {
+  policyAssignments(code: $code, targetType: $targetType, targetIdentifier: $targetIdentifier, page: $page, limit: $limit) {
+    totalCount
+    list {
+      code
+      targetType
+      targetIdentifier
+    }
+  }
+}
+    `;
+export const PolicyWithAssignmentsDocument = `
+    query policyWithAssignments($page: Int, $limit: Int, $code: String!) {
+  policy(code: $code) {
+    code
+    isDefault
+    description
+    statements {
+      resource
+      actions
+      effect
+    }
+    createdAt
+    updatedAt
+    assignmentsCount
+    assignments(page: $page, limit: $limit) {
+      code
+      targetType
+      targetIdentifier
     }
   }
 }
@@ -6488,8 +7231,12 @@ export const RoleDocument = `
     isSystem
     createdAt
     updatedAt
+    users {
+      totalCount
+    }
     parent {
       code
+      arn
       description
       isSystem
       createdAt
@@ -6501,23 +7248,11 @@ export const RoleDocument = `
 export const RoleWithUsersDocument = `
     query roleWithUsers($code: String!) {
   role(code: $code) {
-    code
-    arn
-    description
-    isSystem
-    createdAt
-    updatedAt
-    parent {
-      code
-      description
-      isSystem
-      createdAt
-      updatedAt
-    }
     users {
       totalCount
       list {
         id
+        arn
         userPoolId
         username
         email
@@ -6559,9 +7294,11 @@ export const RoleWithUsersDocument = `
         locality
         region
         postalCode
+        city
+        province
         country
+        createdAt
         updatedAt
-        customData
       }
     }
   }
@@ -6585,6 +7322,28 @@ export const RolesDocument = `
         createdAt
         updatedAt
       }
+    }
+  }
+}
+    `;
+export const RootNodeDocument = `
+    query rootNode($page: Int, $limit: Int, $sortBy: SortByEnum, $includeChildrenNodes: Boolean, $orgId: String!) {
+  rootNode(orgId: $orgId) {
+    id
+    name
+    nameI18n
+    description
+    descriptionI18n
+    order
+    code
+    root
+    depth
+    path
+    createdAt
+    updatedAt
+    children
+    users(page: $page, limit: $limit, sortBy: $sortBy, includeChildrenNodes: $includeChildrenNodes) {
+      totalCount
     }
   }
 }
@@ -6637,10 +7396,11 @@ export const SearchUserDocument = `
       locality
       region
       postalCode
+      city
+      province
       country
       createdAt
       updatedAt
-      customData
     }
   }
 }
@@ -6739,15 +7499,6 @@ export const UserDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -6781,10 +7532,11 @@ export const UserDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -6801,15 +7553,6 @@ export const UserBatchDocument = `
     phoneVerified
     unionid
     openid
-    identities {
-      openid
-      userIdInIdp
-      userId
-      connectionId
-      isSocial
-      provider
-      userPoolId
-    }
     nickname
     registerSource
     photo
@@ -6843,10 +7586,11 @@ export const UserBatchDocument = `
     locality
     region
     postalCode
+    city
+    province
     country
     createdAt
     updatedAt
-    customData
   }
 }
     `;
@@ -6906,6 +7650,10 @@ export const UserpoolDocument = `
       phoneEnabled
       emailEnabled
       usernameEnabled
+    }
+    customSMSProvider {
+      enabled
+      provider
     }
   }
 }
@@ -6994,10 +7742,11 @@ export const UsersDocument = `
       locality
       region
       postalCode
+      city
+      province
       country
       createdAt
       updatedAt
-      customData
     }
   }
 }

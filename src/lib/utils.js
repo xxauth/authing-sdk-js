@@ -36,41 +36,20 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
-exports.verifyToken = exports.graphqlRequest = exports.encrypt = void 0;
-var crypto_1 = require("crypto");
-var version_1 = require("./version");
-var graphql_request_1 = require("graphql-request");
-var lodash_1 = require("lodash");
-var jwt = require("jsonwebtoken");
-exports.encrypt = function (plainText, publicKey) {
-    // jsencrypt 库在加密后使用了base64编码,所以这里要先将base64编码后的密文转成buffer
-    var pawBuffer = Buffer.from(plainText);
-    var encryptText = crypto_1["default"]
-        .publicEncrypt({
-        key: Buffer.from(publicKey),
-        padding: crypto_1["default"].constants.RSA_PKCS1_PADDING
-    }, pawBuffer)
-        .toString('base64');
-    return encryptText;
-};
-exports.graphqlRequest = function (options) { return __awaiter(void 0, void 0, void 0, function () {
-    var endpoint, query, token, variables, headers, graphQLClient, data;
+exports.serialize = exports.createCssClassStyleSheet = exports.popupCenter = exports.deepEqual = exports.encrypt = void 0;
+exports.encrypt = function (plainText, publicKey) { return __awaiter(void 0, void 0, void 0, function () {
+    var crypto, pawBuffer, encryptText;
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                endpoint = options.endpoint, query = options.query, token = options.token, variables = options.variables;
-                headers = {
-                    'x-authing-sdk-version': version_1.SDK_VERSION
-                };
-                token && (headers.Authorization = "Bearer " + token);
-                graphQLClient = new graphql_request_1.GraphQLClient(endpoint, {
-                    headers: headers
-                });
-                return [4 /*yield*/, graphQLClient.request(query, variables)];
-            case 1:
-                data = _a.sent();
-                return [2 /*return*/, data];
-        }
+        crypto = require('crypto');
+        pawBuffer = Buffer.from(plainText);
+        encryptText = crypto
+            .publicEncrypt({
+            key: Buffer.from(publicKey),
+            padding: 1
+            // padding: crypto.constants.RSA_PKCS1_PADDING
+        }, pawBuffer)
+            .toString('base64');
+        return [2 /*return*/, encryptText];
     });
 }); };
 function buildTree(nodes) {
@@ -102,10 +81,10 @@ function buildTree(nodes) {
       ]
     }
     */
-    var rootNodes = [lodash_1["default"].find(nodes, { root: true })];
+    var rootNodes = [nodes.find(function (x) { return x.root === true; })];
     var mapChildren = function (childId) {
-        var node = lodash_1["default"].find(nodes, function (x) { return x.id === childId; }) || null;
-        if (lodash_1["default"].isArray(node.children) && node.children.length > 0) {
+        var node = nodes.find(function (x) { return x.id === childId; }) || null;
+        if (Array.isArray(node.children) && node.children.length > 0) {
             node.children = node.children
                 .map(mapChildren)
                 .filter(function (node) { return node !== null; });
@@ -121,11 +100,62 @@ function buildTree(nodes) {
     return tree[0];
 }
 exports["default"] = buildTree;
-/**
- * @description 验证 jwt token
- *
- */
-exports.verifyToken = function (token, secret) {
-    var decoded = jwt.verify(token, secret);
-    return decoded;
+exports.deepEqual = function (x, y) {
+    if (x === y) {
+        return true;
+    }
+    else if (typeof x == 'object' &&
+        x != null &&
+        typeof y == 'object' &&
+        y != null) {
+        if (Object.keys(x).length != Object.keys(y).length)
+            return false;
+        for (var prop in x) {
+            if (y.hasOwnProperty(prop)) {
+                if (!exports.deepEqual(x[prop], y[prop]))
+                    return false;
+            }
+            else
+                return false;
+        }
+        return true;
+    }
+    else
+        return false;
+};
+exports.popupCenter = function (url, _a) {
+    var _b = _a === void 0 ? { w: 585, h: 649 } : _a, w = _b.w, h = _b.h;
+    // Fixes dual-screen position                             Most browsers      Firefox
+    var dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
+    var dualScreenTop = window.screenTop !== undefined ? window.screenTop : window.screenY;
+    var width = window.innerWidth
+        ? window.innerWidth
+        : document.documentElement.clientWidth
+            ? document.documentElement.clientWidth
+            : window.screen.width;
+    var height = window.innerHeight
+        ? window.innerHeight
+        : document.documentElement.clientHeight
+            ? document.documentElement.clientHeight
+            : window.screen.height;
+    var systemZoom = width / window.screen.availWidth;
+    var left = (width - w) / 2 / systemZoom + dualScreenLeft;
+    var top = (height - h) / 2 / systemZoom + dualScreenTop;
+    var newWindow = window.open(url, '_blank', "\n      toolbar=no,\n      menubar=no,\n      scrollbars=no,\n      resizable=no,\n      location=no,\n      status=no\n      width=" + w / systemZoom + ",\n      height=" + h / systemZoom + ",\n      top=" + top + ",\n      left=" + left + "\n      ");
+    newWindow === null || newWindow === void 0 ? void 0 : newWindow.focus();
+};
+exports.createCssClassStyleSheet = function (className, styleSheet) {
+    var styleTag = document.createElement('style');
+    var styleText = "\n    ." + className + " {\n      " + styleSheet + "\n    }\n  ";
+    var textNode = document.createTextNode(styleText);
+    styleTag.appendChild(textNode);
+    document.head.appendChild(styleTag);
+};
+exports.serialize = function (obj) {
+    var str = [];
+    for (var p in obj)
+        if (obj.hasOwnProperty(p)) {
+            str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
+        }
+    return str.join('&');
 };

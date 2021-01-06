@@ -1,12 +1,12 @@
-import { Variables } from 'graphql-request/dist/src/types';
 import { SDK_VERSION } from '../version';
-import { GraphQLClient } from 'graphql-request';
 import { ManagementClientOptions } from '../management/types';
-import { AuthenticationClientOptions } from '../auth/types';
+import { AuthenticationClientOptions } from '../authentication/types';
+import Axios, { AxiosInstance } from 'axios';
 
 export class GraphqlClient {
   endpoint: string;
-  options: ManagementClientOptions;
+  options: ManagementClientOptions | AuthenticationClientOptions;
+  axios: AxiosInstance;
 
   constructor(
     endpoint: string,
@@ -14,43 +14,57 @@ export class GraphqlClient {
   ) {
     this.endpoint = endpoint;
     this.options = options;
+    this.axios = Axios.create({
+      withCredentials: true
+    });
   }
 
-  async request<T>(options: {
-    query: string;
-    variables?: Variables;
-    token?: string;
-  }) {
+  async request(options: { query: string; variables?: any; token?: string }) {
     const { query, token, variables } = options;
     let headers: any = {
-      'x-authing-sdk-version': SDK_VERSION,
-      'x-authing-userpool-id': this.options.userPoolId,
+      'content-type': 'application/json',
+      'x-authing-sdk-version': `js:${SDK_VERSION}`,
+      'x-authing-userpool-id': this.options.userPoolId || '',
       'x-authing-request-from': this.options.requestFrom || 'sdk',
       'x-authing-app-id': this.options.appId || ''
     };
     token && (headers.Authorization = `Bearer ${token}`);
-    const graphQLClient = new GraphQLClient(this.endpoint, {
-      headers
-    });
-
+    let data = null;
+    let errors = null;
     try {
-      return await graphQLClient.request<T>(query, variables);
+      let { data: responseData } = await this.axios({
+        url: this.endpoint,
+        data: {
+          query,
+          variables
+        },
+        method: 'post',
+        headers,
+        timeout: this.options.timeout
+      });
+      data = responseData.data;
+      errors = responseData.errors;
     } catch (error) {
+      console.log(error);
+      this.options.onError(500, '网络请求错误', null);
+      throw { code: 500, message: '网络请求错误', data: null };
+    }
+
+    if (errors?.length > 0) {
       let errmsg = null;
       let errcode = null;
-      const response = error.response;
-      const errors = response.errors;
+      let data = null;
       errors.map((err: any) => {
         const { message: msg } = err;
-        // console.log('打印错误', err);
-        const { errors } = JSON.parse(msg);
-        const { message: errorMessage } = errors[0]
-        const { code, message } = errorMessage;
+        const { code, message, data: _data } = msg;
         errcode = code;
         errmsg = message;
-        this.options.onError(code, message);
+        data = _data;
+        this.options.onError(code, message, data);
       });
-      throw { code: errcode, message: errmsg };
+      throw { code: errcode, message: errmsg, data };
     }
+
+    return data;
   }
 }

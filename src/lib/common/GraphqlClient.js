@@ -38,50 +38,72 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 exports.GraphqlClient = void 0;
 var version_1 = require("../version");
-var graphql_request_1 = require("graphql-request");
+var axios_1 = require("axios");
 var GraphqlClient = /** @class */ (function () {
     function GraphqlClient(endpoint, options) {
         this.endpoint = endpoint;
         this.options = options;
+        this.axios = axios_1["default"].create({
+            withCredentials: true
+        });
     }
     GraphqlClient.prototype.request = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var query, token, variables, headers, graphQLClient, error_1, errmsg_1, errcode_1, response, errors;
+            var query, token, variables, headers, data, errors, responseData, error_1, errmsg_1, errcode_1, data_1;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         query = options.query, token = options.token, variables = options.variables;
                         headers = {
-                            'x-authing-sdk-version': version_1.SDK_VERSION,
-                            'x-authing-userpool-id': this.options.userPoolId,
+                            'content-type': 'application/json',
+                            'x-authing-sdk-version': "js:" + version_1.SDK_VERSION,
+                            'x-authing-userpool-id': this.options.userPoolId || '',
                             'x-authing-request-from': this.options.requestFrom || 'sdk',
                             'x-authing-app-id': this.options.appId || ''
                         };
                         token && (headers.Authorization = "Bearer " + token);
-                        graphQLClient = new graphql_request_1.GraphQLClient(this.endpoint, {
-                            headers: headers
-                        });
+                        data = null;
+                        errors = null;
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, graphQLClient.request(query, variables)];
-                    case 2: return [2 /*return*/, _a.sent()];
+                        return [4 /*yield*/, this.axios({
+                                url: this.endpoint,
+                                data: {
+                                    query: query,
+                                    variables: variables
+                                },
+                                method: 'post',
+                                headers: headers,
+                                timeout: this.options.timeout
+                            })];
+                    case 2:
+                        responseData = (_a.sent()).data;
+                        data = responseData.data;
+                        errors = responseData.errors;
+                        return [3 /*break*/, 4];
                     case 3:
                         error_1 = _a.sent();
-                        errmsg_1 = null;
-                        errcode_1 = null;
-                        response = error_1.response;
-                        errors = response.errors;
-                        errors.map(function (err) {
-                            var msg = err.message;
-                            var _a = JSON.parse(msg), code = _a.code, message = _a.message;
-                            errcode_1 = code;
-                            errmsg_1 = message;
-                            _this.options.onError(code, message);
-                        });
-                        throw { code: errcode_1, message: errmsg_1 };
-                    case 4: return [2 /*return*/];
+                        console.log(error_1);
+                        this.options.onError(500, '网络请求错误', null);
+                        throw { code: 500, message: '网络请求错误', data: null };
+                    case 4:
+                        if ((errors === null || errors === void 0 ? void 0 : errors.length) > 0) {
+                            errmsg_1 = null;
+                            errcode_1 = null;
+                            data_1 = null;
+                            errors.map(function (err) {
+                                var msg = err.message;
+                                var code = msg.code, message = msg.message, _data = msg.data;
+                                errcode_1 = code;
+                                errmsg_1 = message;
+                                data_1 = _data;
+                                _this.options.onError(code, message, data_1);
+                            });
+                            throw { code: errcode_1, message: errmsg_1, data: data_1 };
+                        }
+                        return [2 /*return*/, data];
                 }
             });
         });

@@ -49,26 +49,109 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 exports.__esModule = true;
 exports.OrgManagementClient = void 0;
 var utils_1 = require("../utils");
-var lodash_1 = require("lodash");
 var graphqlapi_1 = require("../graphqlapi");
-var axios_1 = require("axios");
-var version_1 = require("../version");
+/**
+ * @class OrgManagementClient 管理组织机构
+ * @description 一个 Authing 用户池可以创建多个组织机构。此模块用于管理 Authing 组织机构，可以进行组织机构的增删改查、添加删除移动节点、导入组织机构等操作。
+ *
+ * @example
+ *
+ * 请使用以下方式使用该模块：
+ * \`\`\`javascript
+ * import { ManagementClient } from "authing-js-sdk"
+ * const managementClient = new ManagementClient({
+ *    userPoolId: "YOUR_USERPOOL_ID",
+ *    secret: "YOUR_USERPOOL_SECRET",
+ * })
+ * managementClient.org.list // 获取用户池组织机构列表
+ * managementClient.org.moveNode // 获取组织机构详情
+ * managementClient.org.listMembers // 获取节点用户列表
+ * \`\`\`
+ *
+ * @name OrgManagementClient
+ */
 var OrgManagementClient = /** @class */ (function () {
-    function OrgManagementClient(options, graphqlClient, graphqlClientV2, tokenProvider) {
+    function OrgManagementClient(options, graphqlClient, httpClient, tokenProvider) {
         this.options = options;
+        this.httpClient = httpClient;
         this.graphqlClient = graphqlClient;
-        this.graphqlClientV2 = graphqlClientV2;
         this.tokenProvider = tokenProvider;
     }
     OrgManagementClient.prototype.buildTree = function (org) {
-        org.tree = utils_1["default"](lodash_1["default"].cloneDeep(org.nodes));
+        org.tree = utils_1["default"](JSON.parse(JSON.stringify(org.nodes)));
         return org;
     };
     /**
-     * @description 获取用户池组织机构列表
-     * @param page 从 1 开始，默认为 1
-     * @param limit 默认为 10
+     * @name create
+     * @name_zh 创建组织机构
+     * @description 创建组织机构，会创建一个只有一个节点的组织机构。
+     * 如果你想将一个完整的组织树导入进来，请使用 importByJson 方法。
      *
+     * @param {string} name 组织机构名称，该名称会作为该组织机构根节点的名称。
+     * @param {string} [description] 根节点描述
+     * @param {string} [code] 根节点唯一标志，必须为合法的英文字符。
+     *
+     * @example
+     *
+     * const org = await managementClient.org.create('北京非凡科技', '北京非凡科技有限公司', 'feifan');
+     *
+     * @memberof OrgManagementClient
+     */
+    OrgManagementClient.prototype.create = function (name, description, code) {
+        return __awaiter(this, void 0, void 0, function () {
+            var org;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, graphqlapi_1.createOrg(this.graphqlClient, this.tokenProvider, {
+                            name: name,
+                            description: description,
+                            code: code
+                        })];
+                    case 1:
+                        org = (_a.sent()).createOrg;
+                        return [2 /*return*/, org];
+                }
+            });
+        });
+    };
+    /**
+     * @name deleteById
+     * @name_zh 删除组织机构
+     * @description 删除组织机构树
+     * @param {string} id 组织机构 ID
+     *
+     * @returns {Promise<CommonMessage>}
+     * @memberof OrgManagementClient
+     */
+    OrgManagementClient.prototype.deleteById = function (id) {
+        return __awaiter(this, void 0, void 0, function () {
+            var res;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, graphqlapi_1.deleteOrg(this.graphqlClient, this.tokenProvider, {
+                            id: id
+                        })];
+                    case 1:
+                        res = _a.sent();
+                        return [2 /*return*/, res.deleteOrg];
+                }
+            });
+        });
+    };
+    /**
+     * @name list
+     * @name_zh 获取用户池组织机构列表
+     * @description 获取用户池组织机构列表
+     *
+     * @param {number} [page=1]
+     * @param {number} [limit=10]
+     *
+     * @example
+     *
+     * const { totalCount, list } = await managementClient.org.list()
+     *
+     * @returns
+     * @memberof OrgManagementClient
      */
     OrgManagementClient.prototype.list = function (page, limit) {
         if (page === void 0) { page = 1; }
@@ -78,7 +161,7 @@ var OrgManagementClient = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, graphqlapi_1.orgs(this.graphqlClientV2, this.tokenProvider, {
+                    case 0: return [4 /*yield*/, graphqlapi_1.orgs(this.graphqlClient, this.tokenProvider, {
                             page: page,
                             limit: limit
                         })];
@@ -93,28 +176,26 @@ var OrgManagementClient = /** @class */ (function () {
         });
     };
     /**
-     * 创建组织机构
-     * @memberof OrgManagementClient
-     */
-    OrgManagementClient.prototype.create = function (name, description, code) {
-        return __awaiter(this, void 0, void 0, function () {
-            var org;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, graphqlapi_1.createOrg(this.graphqlClientV2, this.tokenProvider, {
-                            name: name,
-                            description: description,
-                            code: code
-                        })];
-                    case 1:
-                        org = (_a.sent()).createOrg;
-                        return [2 /*return*/, org];
-                }
-            });
-        });
-    };
-    /**
-     * 往组织机构中添加一个节点
+     * @name addNode
+     * @name_zh 添加节点
+     * @description 在组织机构中添加一个节点
+     *
+     * @param {string} orgId 组织机构 ID
+     * @param {string} parentNodeId 父节点 ID
+     * @param {Object} data 节点数据
+     * @param {string} data.name 节点名称
+     * @param {string} [data.code] 节点唯一标志
+     * @param {string} [data.description] 节点描述信息
+     *
+     * @example
+     *
+     * const org = await managementClient.org.create('北京非凡科技', '北京非凡科技有限公司', 'feifan');
+     * const { id: orgId, rootNode } = org
+     * const newOrg = await managementClient.org.addNode(orgId, rootNode.id, { name: '运营部门' })
+     *
+     * // newOrg.nodes.length 现在为 2
+     *
+     * @returns {Promise<Org>}
      * @memberof OrgManagementClient
      */
     OrgManagementClient.prototype.addNode = function (orgId, parentNodeId, data) {
@@ -124,7 +205,7 @@ var OrgManagementClient = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         name = data.name, code = data.code, order = data.order, nameI18n = data.nameI18n, description = data.description, descriptionI18n = data.descriptionI18n;
-                        return [4 /*yield*/, graphqlapi_1.addNode(this.graphqlClientV2, this.tokenProvider, {
+                        return [4 /*yield*/, graphqlapi_1.addNode(this.graphqlClient, this.tokenProvider, {
                                 orgId: orgId,
                                 parentNodeId: parentNodeId,
                                 name: name,
@@ -141,6 +222,26 @@ var OrgManagementClient = /** @class */ (function () {
             });
         });
     };
+    /**
+     * @name updateNode
+     * @name_zh 修改节点
+     * @description 修改节点数据
+     *
+     * @param {string} id 节点 ID
+     * @param {Object} updates 修改数据
+     * @param {string} [updates.name] 节点名称
+     * @param {string} [updates.code] 节点唯一标志
+     * @param {string} [updates.description] 节点描述信息
+     *
+     * @example
+     *
+     * await managementClient.org.updateNode("NDOEID", {
+     *    name: '新的节点名称'
+     * })
+     *
+     * @returns {Promise<Org>}
+     * @memberof OrgManagementClient
+     */
     OrgManagementClient.prototype.updateNode = function (id, updates) {
         return __awaiter(this, void 0, void 0, function () {
             var name, code, description, node;
@@ -148,7 +249,7 @@ var OrgManagementClient = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         name = updates.name, code = updates.code, description = updates.description;
-                        return [4 /*yield*/, graphqlapi_1.updateNode(this.graphqlClientV2, this.tokenProvider, {
+                        return [4 /*yield*/, graphqlapi_1.updateNode(this.graphqlClient, this.tokenProvider, {
                                 id: id,
                                 name: name,
                                 code: code,
@@ -162,7 +263,13 @@ var OrgManagementClient = /** @class */ (function () {
         });
     };
     /**
-     * 通过 ID 查询组织机构
+     * @name findById
+     * @name_zh 获取组织机构详情
+     * @description 通过组织机构 ID 获取组织机构详情
+     *
+     * @param {string} id 组织机构 ID
+     *
+     * @returns {Promise<Org>}
      * @memberof OrgManagementClient
      */
     OrgManagementClient.prototype.findById = function (id) {
@@ -170,7 +277,7 @@ var OrgManagementClient = /** @class */ (function () {
             var data;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, graphqlapi_1.org(this.graphqlClientV2, this.tokenProvider, {
+                    case 0: return [4 /*yield*/, graphqlapi_1.org(this.graphqlClient, this.tokenProvider, {
                             id: id
                         })];
                     case 1:
@@ -181,35 +288,22 @@ var OrgManagementClient = /** @class */ (function () {
         });
     };
     /**
-     * 删除组织机构树
-     * @param {string} id
-     * @returns
+     * @name deleteNode
+     * @name_zh 删除节点
+     * @description 删除组织机构树中的某一个节点
+     *
+     * @param {string} orgId 组织机构 ID
+     * @param {string} nodeId 节点 ID
+     *
+     * @returns {Promise<CommonMessage>}
      * @memberof OrgManagementClient
-     */
-    OrgManagementClient.prototype["delete"] = function (id) {
-        return __awaiter(this, void 0, void 0, function () {
-            var res;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, graphqlapi_1.deleteOrg(this.graphqlClient, this.tokenProvider, {
-                            _id: id
-                        })];
-                    case 1:
-                        res = _a.sent();
-                        return [2 /*return*/, res.deleteOrg];
-                }
-            });
-        });
-    };
-    /**
-     * 删除组织机构树中的某一个节点
      */
     OrgManagementClient.prototype.deleteNode = function (orgId, nodeId) {
         return __awaiter(this, void 0, void 0, function () {
             var data;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, graphqlapi_1.deleteNode(this.graphqlClientV2, this.tokenProvider, {
+                    case 0: return [4 /*yield*/, graphqlapi_1.deleteNode(this.graphqlClient, this.tokenProvider, {
                             orgId: orgId,
                             nodeId: nodeId
                         })];
@@ -221,14 +315,28 @@ var OrgManagementClient = /** @class */ (function () {
         });
     };
     /**
-     * @description 移动节点
+     * @name moveNode 移动节点
+     * @name_zh 移动节点
+     * @description 移动组织机构节点，移动某节点时需要指定该节点新的父节点。注意不能将一个节点移动到自己的子节点下面。
+     *
+     * @param {string} orgId 组织机构 ID
+     * @param {string} nodeId 需要移动的节点 ID
+     * @param {string} targetParentId 目标父节点 ID
+     *
+     * @example
+     *
+     * await managementClient.org.moveNode("ORGID", "NODEID", "TRAGET_NODE_ID")
+     *
+     * @returns {Promise<Org>} 最新的树结构
+     * @memberof OrgManagementClient
+     *
      */
     OrgManagementClient.prototype.moveNode = function (orgId, nodeId, targetParentId) {
         return __awaiter(this, void 0, void 0, function () {
             var org;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, graphqlapi_1.moveNode(this.graphqlClientV2, this.tokenProvider, {
+                    case 0: return [4 /*yield*/, graphqlapi_1.moveNode(this.graphqlClient, this.tokenProvider, {
                             orgId: orgId,
                             nodeId: nodeId,
                             targetParentId: targetParentId
@@ -241,43 +349,56 @@ var OrgManagementClient = /** @class */ (function () {
         });
     };
     /**
-     * 判断一个节点是不是组织树的根节点
-     * @param {string} orgId
-     * @param {string} nodeId
-     * @returns
+     * @name isRootNode
+     * @name_zh 判断是否为根节点
+     * @description 判断一个节点是不是组织树的根节点
+     *
+     * @param {string} orgId 组织机构 ID
+     * @param {string} nodeId 组织机构 ID
+     *
+     *
+     * @returns {Promise<boolean>}
      * @memberof OrgManagementClient
      */
-    OrgManagementClient.prototype.isRoot = function (orgId, nodeId) {
+    OrgManagementClient.prototype.isRootNode = function (orgId, nodeId) {
         return __awaiter(this, void 0, void 0, function () {
             var res;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, graphqlapi_1.isRootNodeOfOrg(this.graphqlClient, this.tokenProvider, {
-                            input: {
-                                orgId: orgId,
-                                groupId: nodeId
-                            }
+                    case 0: return [4 /*yield*/, graphqlapi_1.isRootNode(this.graphqlClient, this.tokenProvider, {
+                            orgId: orgId,
+                            nodeId: nodeId
                         })];
                     case 1:
                         res = _a.sent();
-                        return [2 /*return*/, res.isRootNodeOfOrg];
+                        return [2 /*return*/, res.isRootNode];
                 }
             });
         });
     };
     /**
-     * 查询节点子节点列表
-     * @param {string} orgId
-     * @param {string} nodeId
-     * @returns
+     * @name listChildren
+     * @name_zh 获取子节点列表
+     * @description 查询一个节点的子节点列表
+     *
+     * @param {string} orgId 组织机构 ID
+     * @param {string} nodeId 组织机构 ID
+     *
+     * @example
+     *
+     * // 子节点列表
+     * cosnt children = await managementClient.org.moveNode("ORGID", "NODEID")
+     *
+     *
+     * @returns {Promise<Node[]>}
      * @memberof OrgManagementClient
      */
-    OrgManagementClient.prototype.childrenNodes = function (orgId, nodeId) {
+    OrgManagementClient.prototype.listChildren = function (orgId, nodeId) {
         return __awaiter(this, void 0, void 0, function () {
             var res;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, graphqlapi_1.getChildrenNodes(this.graphqlClientV2, this.tokenProvider, {
+                    case 0: return [4 /*yield*/, graphqlapi_1.getChildrenNodes(this.graphqlClient, this.tokenProvider, {
                             orgId: orgId,
                             nodeId: nodeId
                         })];
@@ -289,241 +410,170 @@ var OrgManagementClient = /** @class */ (function () {
         });
     };
     /**
-     * 查询组织机构树根节点
+     * @name rootNode
+     * @name_zh 获取根节点
+     * @description 获取一个组织的根节点
+     *
+     * @param {string} orgId 组织机构 ID
+     *
+     * @example
+     *
+     * const rootNode = await managementClient.org.rootNode("ORGID")
+     *
+     * @returns {Promise<Node[]>}
      * @memberof OrgManagementClient
      */
-    OrgManagementClient.prototype.rootNode = function (id) {
+    OrgManagementClient.prototype.rootNode = function (orgId) {
         return __awaiter(this, void 0, void 0, function () {
             var res;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, graphqlapi_1.orgRootNode(this.graphqlClient, this.tokenProvider, {
-                            _id: id
+                    case 0: return [4 /*yield*/, graphqlapi_1.rootNode(this.graphqlClient, this.tokenProvider, {
+                            orgId: orgId
                         })];
                     case 1:
                         res = _a.sent();
-                        return [2 /*return*/, res.orgRootNode];
+                        return [2 /*return*/, res.rootNode];
                 }
             });
         });
     };
     /**
-     * 根据 Group 的自定义字段查询节点
+     * @name importByJson
+     * @name_zh 通过 JSON 导入
+     * @description 通过一个 JSON 树结构导入组织机构
      *
-     * @param {SearchOrgNodesVariables} options
+     * @param {Object} json JSON 格式的树结构，详细格式请见示例代码。
+     *
+     * @example
+     *
+     * const tree = {
+     *   name: '北京非凡科技有限公司',
+     *   code: 'feifan',
+     *   children: [
+     *      {
+     *          code: 'operation',
+     *          name: '运营',
+     *          description: '商业化部门'
+     *       },
+     *       {
+     *         code: 'dev',
+     *         name: '研发',
+     *         description: '研发部门',
+     *         children: [
+     *           {
+     *             code: 'backend',
+     *             name: '后端',
+     *             description: '后端研发部门'
+     *           }
+     *         ]
+     *       }
+     *     ]
+     *   };
+     * const org = await managementClient.org.importByJson(tree);
+     *
+     * @returns {Promise<Node[]>}
      * @memberof OrgManagementClient
      */
-    OrgManagementClient.prototype.searchNodes = function (options) {
+    OrgManagementClient.prototype.importByJson = function (json) {
         return __awaiter(this, void 0, void 0, function () {
-            var orgId, _a, name, _b, metadata, res;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0:
-                        orgId = options.orgId, _a = options.name, name = _a === void 0 ? '' : _a, _b = options.metadata, metadata = _b === void 0 ? [] : _b;
-                        if (!name && metadata.length === 0) {
-                            this.options.onError(500, 'Plesas Provide name or metadata');
-                        }
-                        if (metadata) {
-                            metadata = metadata.map(function (metadata) {
-                                if (typeof metadata.value !== 'string') {
-                                    metadata.value = JSON.stringify(metadata.value);
-                                }
-                                return metadata;
-                            });
-                        }
-                        return [4 /*yield*/, graphqlapi_1.searchNodes(this.graphqlClient, this.tokenProvider, {
-                                orgId: orgId,
-                                name: name,
-                                metadata: metadata
-                            })];
+            var data;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.httpClient.request({
+                            method: 'POST',
+                            url: this.options.host + "/api/v2/orgs/import",
+                            data: {
+                                filetype: 'json',
+                                file: json
+                            }
+                        })];
                     case 1:
-                        res = _c.sent();
-                        return [2 /*return*/, res.searchOrgNodes];
+                        data = _a.sent();
+                        return [2 /*return*/, data];
                 }
             });
         });
     };
     /**
-     * @description 通过一个 JSON 导入树机构
+     * @name addMembers
+     * @name_zh 添加成功
+     * @description 节点添加成员
+     *
+     * @param {string} nodeId 节点 ID
+     * @param {string[]} userIds 用户 ID 列表
+     *
+     * @returns {Promise<PaginatedUsers>}
+     * @memberof OrgManagementClient
      *
      */
-    OrgManagementClient.prototype["import"] = function (json) {
+    OrgManagementClient.prototype.addMembers = function (nodeId, userIds) {
         return __awaiter(this, void 0, void 0, function () {
-            var api, res;
+            var data;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        api = this.options.host + "/v2/api/org/import-by-json";
-                        return [4 /*yield*/, axios_1["default"].post(api, json, {
-                                headers: {
-                                    'x-authing-userpool-id': this.options.userPoolId,
-                                    'x-authing-sdk-version': version_1.SDK_VERSION,
-                                    'x-authing-request-from': 'sdk'
-                                }
-                            })];
+                    case 0: return [4 /*yield*/, graphqlapi_1.addMember(this.graphqlClient, this.tokenProvider, {
+                            nodeId: nodeId,
+                            userIds: userIds
+                        })];
                     case 1:
-                        res = _a.sent();
-                        return [2 /*return*/, res.data];
-                }
-            });
-        });
-    };
-    OrgManagementClient.prototype.addMember = function (arg1, arg2, arg3, arg4) {
-        return __awaiter(this, arguments, void 0, function () {
-            var orgId, nodeCode, userId, isLeader, data, nodeId, userId, isLeader, data;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!(arguments.length === 4)) return [3 /*break*/, 2];
-                        orgId = arg1;
-                        nodeCode = arg2;
-                        userId = arg3;
-                        isLeader = arg4 || false;
-                        return [4 /*yield*/, graphqlapi_1.addMember(this.graphqlClientV2, this.tokenProvider, {
-                                orgId: orgId,
-                                nodeCode: nodeCode,
-                                userIds: [userId],
-                                isLeader: isLeader
-                            })];
-                    case 1:
-                        data = (_a.sent()).addMember;
-                        return [2 /*return*/, data.users];
-                    case 2:
-                        nodeId = arg1;
-                        userId = arg2;
-                        isLeader = arg3 || false;
-                        return [4 /*yield*/, graphqlapi_1.addMember(this.graphqlClientV2, this.tokenProvider, {
-                                nodeId: nodeId,
-                                userIds: [userId],
-                                isLeader: isLeader
-                            })];
-                    case 3:
                         data = (_a.sent()).addMember;
                         return [2 /*return*/, data.users];
                 }
             });
         });
     };
-    OrgManagementClient.prototype.addMembers = function (arg1, arg2, arg3, arg4) {
+    /**
+     * @name listMembers
+     * @name_zh 获取节点成员
+     * @description 获取节点成员，可以获取直接添加到该节点中的用户，也可以获取到该节点子节点的用户。
+     *
+     * @param {string} nodeId 节点 ID
+     * @param {Object} options 查询参数
+     * @param {number} [options.page=1]
+     * @param {number} [options.limit=10]
+     * @param {boolean} [options.includeChildrenNodes=false] 是否获取所有子节点的成员
+     *
+     *
+     * @returns {Promise<PaginatedUsers>}
+     * @memberof OrgManagementClient
+     *
+     */
+    OrgManagementClient.prototype.listMembers = function (nodeId, options) {
         return __awaiter(this, void 0, void 0, function () {
-            var orgId, nodeCode, userIds, isLeader, res, nodeId, userIds, isLeader, res;
+            var nodeById;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        if (!(typeof arg2 === 'string')) return [3 /*break*/, 2];
-                        orgId = arg1;
-                        nodeCode = arg2;
-                        userIds = arg3;
-                        isLeader = arg4 || false;
-                        return [4 /*yield*/, graphqlapi_1.addMember(this.graphqlClientV2, this.tokenProvider, {
-                                orgId: orgId,
-                                nodeCode: nodeCode,
-                                userIds: userIds,
-                                isLeader: isLeader
-                            })];
+                    case 0: return [4 /*yield*/, graphqlapi_1.getMembersById(this.graphqlClient, this.tokenProvider, __assign({ id: nodeId }, options))];
                     case 1:
-                        res = _a.sent();
-                        return [2 /*return*/, res.addMember.users];
-                    case 2:
-                        nodeId = arg1;
-                        userIds = arg2;
-                        isLeader = arg3 || false;
-                        return [4 /*yield*/, graphqlapi_1.addMember(this.graphqlClientV2, this.tokenProvider, {
-                                nodeId: nodeId,
-                                userIds: userIds,
-                                isLeader: isLeader
-                            })];
-                    case 3:
-                        res = _a.sent();
-                        return [2 /*return*/, res.addMember.users];
-                }
-            });
-        });
-    };
-    OrgManagementClient.prototype.getMembers = function (arg1, arg2, arg3) {
-        return __awaiter(this, void 0, void 0, function () {
-            var orgId, code, options, nodeByCode, id, options, nodeById;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!(arg3 || (arg2 && typeof arg2 === 'string'))) return [3 /*break*/, 2];
-                        orgId = arg1;
-                        code = arg2;
-                        options = arg3 || {};
-                        return [4 /*yield*/, graphqlapi_1.getMembersByCode(this.graphqlClientV2, this.tokenProvider, __assign({ orgId: orgId,
-                                code: code }, options))];
-                    case 1:
-                        nodeByCode = (_a.sent()).nodeByCode;
-                        return [2 /*return*/, nodeByCode.users];
-                    case 2:
-                        id = arg1;
-                        options = arg2 || {};
-                        return [4 /*yield*/, graphqlapi_1.getMembersById(this.graphqlClientV2, this.tokenProvider, __assign({ id: id }, options))];
-                    case 3:
                         nodeById = (_a.sent()).nodeById;
                         return [2 /*return*/, nodeById.users];
                 }
             });
         });
     };
-    OrgManagementClient.prototype.removeMember = function (arg1, arg2, arg3) {
+    /**
+     * @name removeMembers
+     * @name_zh 删除成功
+     * @description 删除节点成员
+     *
+     * @param {string} nodeId 节点 ID
+     * @param {string[]} userIds 用户 ID 列表
+     *
+     * @returns {Promise<PaginatedUsers>}
+     * @memberof OrgManagementClient
+     *
+     */
+    OrgManagementClient.prototype.removeMembers = function (nodeId, userIds) {
         return __awaiter(this, void 0, void 0, function () {
-            var orgId, code, userId, data, nodeId, userId, data;
+            var data;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        if (!arg3) return [3 /*break*/, 2];
-                        orgId = arg1;
-                        code = arg2;
-                        userId = arg3;
-                        return [4 /*yield*/, graphqlapi_1.removeMembers(this.graphqlClientV2, this.tokenProvider, {
-                                orgId: orgId,
-                                nodeCode: code,
-                                userIds: [userId]
-                            })];
+                    case 0: return [4 /*yield*/, graphqlapi_1.removeMembers(this.graphqlClient, this.tokenProvider, {
+                            nodeId: nodeId,
+                            userIds: userIds
+                        })];
                     case 1:
-                        data = (_a.sent()).removeMember;
-                        return [2 /*return*/, data.users];
-                    case 2:
-                        nodeId = arg1;
-                        userId = arg2;
-                        return [4 /*yield*/, graphqlapi_1.removeMembers(this.graphqlClientV2, this.tokenProvider, {
-                                nodeId: nodeId,
-                                userIds: [userId]
-                            })];
-                    case 3:
-                        data = (_a.sent()).removeMember;
-                        return [2 /*return*/, data.users];
-                }
-            });
-        });
-    };
-    OrgManagementClient.prototype.removeMembers = function (arg1, arg2, arg3) {
-        return __awaiter(this, void 0, void 0, function () {
-            var orgId, code, userIds, data, nodeId, userIds, data;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!arg3) return [3 /*break*/, 2];
-                        orgId = arg1;
-                        code = arg2;
-                        userIds = arg3;
-                        return [4 /*yield*/, graphqlapi_1.removeMembers(this.graphqlClientV2, this.tokenProvider, {
-                                orgId: orgId,
-                                nodeCode: code,
-                                userIds: userIds
-                            })];
-                    case 1:
-                        data = (_a.sent()).removeMember;
-                        return [2 /*return*/, data.users];
-                    case 2:
-                        nodeId = arg1;
-                        userIds = arg2;
-                        return [4 /*yield*/, graphqlapi_1.removeMembers(this.graphqlClientV2, this.tokenProvider, {
-                                nodeId: nodeId,
-                                userIds: userIds
-                            })];
-                    case 3:
                         data = (_a.sent()).removeMember;
                         return [2 /*return*/, data.users];
                 }

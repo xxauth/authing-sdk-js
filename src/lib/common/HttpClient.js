@@ -43,7 +43,9 @@ var HttpClient = /** @class */ (function () {
     function HttpClient(options, tokenProvider) {
         this.options = options;
         this.tokenProvider = tokenProvider;
-        this.axios = axios_1["default"].create();
+        this.axios = axios_1["default"].create({
+            withCredentials: true
+        });
     }
     HttpClient.prototype.request = function (config) {
         return __awaiter(this, void 0, void 0, function () {
@@ -52,22 +54,30 @@ var HttpClient = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         headers = {
-                            'x-authing-sdk-version': version_1.SDK_VERSION,
-                            'x-authing-userpool-id': this.options.userPoolId,
+                            'x-authing-sdk-version': "js:" + version_1.SDK_VERSION,
+                            'x-authing-userpool-id': this.options.userPoolId || '',
                             'x-authing-request-from': this.options.requestFrom || 'sdk',
                             'x-authing-app-id': this.options.appId || ''
                         };
-                        return [4 /*yield*/, this.tokenProvider.getAccessToken()];
+                        if (!!(config && config.headers && config.headers.authorization)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.tokenProvider.getToken()];
                     case 1:
                         token = _a.sent();
                         token && (headers.Authorization = "Bearer " + token);
-                        config.headers = headers;
-                        return [4 /*yield*/, this.axios.request(config)];
+                        return [3 /*break*/, 3];
                     case 2:
+                        headers.authorization = config.headers.authorization;
+                        _a.label = 3;
+                    case 3:
+                        config.headers = headers;
+                        config.timeout = this.options.timeout;
+                        return [4 /*yield*/, this.axios.request(config)];
+                    case 4:
                         data = (_a.sent()).data;
                         code = data.code, message = data.message;
                         if (code !== 200) {
-                            throw new Error(message);
+                            this.options.onError(code, message, data.data);
+                            throw new Error(JSON.stringify({ code: code, message: message, data: data.data }));
                         }
                         return [2 /*return*/, data.data];
                 }

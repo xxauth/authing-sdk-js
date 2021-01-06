@@ -37,8 +37,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 exports.__esModule = true;
 exports.ManagementTokenProvider = void 0;
-var utils_1 = require("../utils");
 var jwt_decode_1 = require("jwt-decode");
+var graphqlapi_1 = require("../graphqlapi");
 var ManagementTokenProvider = /** @class */ (function () {
     function ManagementTokenProvider(options, graphqlClient) {
         this.options = options;
@@ -59,23 +59,16 @@ var ManagementTokenProvider = /** @class */ (function () {
      */
     ManagementTokenProvider.prototype.getClientWhenSdkInit = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var graphqlApiEndpoint, res;
+            var res;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        graphqlApiEndpoint = this.graphqlClient.endpoint // `${this.options.host}/graphql`;
-                        ;
-                        return [4 /*yield*/, utils_1.graphqlRequest({
-                                endpoint: graphqlApiEndpoint,
-                                query: "query getClientWhenSdkInit($clientId: String!, $secret: String!) {\n  getClientWhenSdkInit(clientId: $clientId, secret: $secret) {\n    accessToken\n  }\n}\n",
-                                variables: {
-                                    clientId: this.options.userPoolId,
-                                    secret: this.options.secret
-                                }
-                            })];
+                    case 0: return [4 /*yield*/, graphqlapi_1.getAccessToken(this.graphqlClient, {
+                            userPoolId: this.options.userPoolId,
+                            secret: this.options.secret
+                        })];
                     case 1:
                         res = _a.sent();
-                        return [2 /*return*/, res.getClientWhenSdkInit.accessToken];
+                        return [2 /*return*/, res.accessToken.accessToken];
                 }
             });
         });
@@ -87,19 +80,12 @@ var ManagementTokenProvider = /** @class */ (function () {
      */
     ManagementTokenProvider.prototype.refreshToken = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var graphqlApiEndpoint, res;
+            var res;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        graphqlApiEndpoint = this.graphqlClient.endpoint;
-                        return [4 /*yield*/, utils_1.graphqlRequest({
-                                endpoint: graphqlApiEndpoint,
-                                query: "mutation refreshAccessToken($userPoolId: String!, $accessToken: String!){\n        refreshAccessToken(userPoolId: $userPoolId, accessToken: $accessToken) {\n          accessToken\n        }\n      }",
-                                variables: {
-                                    userPoolId: this.options.userPoolId,
-                                    accessToken: this._accessToken
-                                }
-                            })];
+                    case 0: return [4 /*yield*/, graphqlapi_1.refreshAccessToken(this.graphqlClient, {
+                            accessToken: this.options.accessToken
+                        })];
                     case 1:
                         res = _a.sent();
                         return [2 /*return*/, res.refreshAccessToken.accessToken];
@@ -113,11 +99,14 @@ var ManagementTokenProvider = /** @class */ (function () {
      * @returns {Promise<string>}
      * @memberof ManagementTokenProvider
      */
-    ManagementTokenProvider.prototype.getAccessToken = function () {
+    ManagementTokenProvider.prototype.getToken = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        if (this.options.accessToken) {
+                            return [2 /*return*/, this.options.accessToken];
+                        }
                         // 缓存到 accessToken 过期前 3600 s
                         if (this._accessToken &&
                             this._accessTokenExpriredAt > new Date().getTime() + 3600 * 1000) {

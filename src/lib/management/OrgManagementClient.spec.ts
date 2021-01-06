@@ -1,12 +1,12 @@
-import { ManagementClient } from './index';
+import { ManagementClient } from './ManagementClient';
 import { generateRandomString, getOptionsFromEnv } from '../testing-helper';
 import test from 'ava';
 
-const management = new ManagementClient(getOptionsFromEnv());
+const managementClient = new ManagementClient(getOptionsFromEnv());
 
-test.skip('通过 json 导入组织机构', async t => {
+test('通过 json 导入组织机构', async t => {
   const tree = {
-    name: '北京非凡科技有限公司',
+    name: '北京非凡科技有限公司2',
     code: 'feifan',
     nameI18n: {
       en: 'Beijing Feifan Technology Co., Ltd.',
@@ -65,56 +65,105 @@ test.skip('通过 json 导入组织机构', async t => {
       }
     ]
   };
-  let org = await management.org.import(tree);
+  let org = await managementClient.org.importByJson(tree);
   t.assert(org);
-
-  const orgTree = await management.org.findById(org.id);
+  const orgTree = await managementClient.org.findById(org.id);
   t.assert(orgTree.id);
 });
 
-test.skip('添加成员', async t => {
+test('添加成员', async t => {
   const tree = {
     name: '北京非凡科技有限公司',
     code: 'feifan',
     order: 10,
     children: [
       {
-        code: 'business',
-        name: '商业化',
-        description: '商业化部门',
-        order: 30
-      },
-      {
         code: 'operation',
         name: '运营',
-        description: '商业化部门',
-        order: 20
+        description: '商业化部门'
       },
       {
-        code: 'hr',
-        name: '人事',
-        description: '人事部门',
-        order: 10
+        code: 'dev',
+        name: '研发',
+        description: '研发部门',
+        children: [
+          {
+            code: 'backend',
+            name: '后端',
+            description: '后端研发部门'
+          }
+        ]
       }
     ]
   };
-  let org = await management.org.import(tree);
+  let org = await managementClient.org.importByJson(tree);
   t.assert(org);
-  const orgTree = await management.org.findById(org.id);
+  const orgTree = await managementClient.org.findById(org.id);
   t.assert(orgTree.id);
 
   // 添加成员
-  const user = await management.users.create({
+  const user = await managementClient.users.create({
     username: generateRandomString(),
     password: '123456'
   });
   const rootNode = orgTree.rootNode;
-  await management.org.addMember(org.id, rootNode.code, user.id);
+  await managementClient.org.addMembers(rootNode.id, [user.id]);
 
-  const { totalCount, list } = await management.org.getMembers(
-    org.id,
-    rootNode.code
+  const { totalCount, list } = await managementClient.org.listMembers(
+    rootNode.id
   );
   t.assert(totalCount === 1);
   t.assert(list.length === 1);
+});
+
+test('create', async t => {
+  const code = generateRandomString();
+  const name = generateRandomString();
+  const org = await managementClient.org.create(
+    name,
+    generateRandomString(),
+    code
+  );
+  t.assert(org.rootNode.code === code);
+  t.assert(org.rootNode.name === name);
+  t.assert(org.nodes.length === 1);
+});
+
+test('addNode', async t => {
+  const org = await managementClient.org.create(
+    generateRandomString(),
+    generateRandomString(),
+    generateRandomString()
+  );
+  const rootNode = org.rootNode;
+  const newOrg = await managementClient.org.addNode(org.id, rootNode.id, {
+    name: generateRandomString()
+  });
+  t.assert(newOrg.nodes.length === 2);
+});
+
+test('updateNode', async t => {
+  const org = await managementClient.org.create(
+    generateRandomString(),
+    generateRandomString(),
+    generateRandomString()
+  );
+  const name = generateRandomString();
+  const rootNode = await managementClient.org.updateNode(org.rootNode.id, {
+    name
+  });
+  t.assert(rootNode.name === name);
+  const newOrg = await managementClient.org.findById(org.id);
+  t.assert(newOrg.rootNode.name == name);
+});
+
+test('findById', async t => {
+  let org = await managementClient.org.create(
+    generateRandomString(),
+    generateRandomString(),
+    generateRandomString()
+  );
+  org = await managementClient.org.findById(org.id);
+  t.assert(org);
+  t.assert(org.rootNode);
 });

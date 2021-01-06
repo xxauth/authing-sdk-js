@@ -2,79 +2,87 @@ import { GraphqlClient } from './../common/GraphqlClient';
 import { ManagementTokenProvider } from './ManagementTokenProvider';
 import { ExtendedOrg, ManagementClientOptions } from './types';
 import buildTree from '../utils';
-import _ from 'lodash';
-import { SearchOrgNodesVariables } from '../../types/graphql.v1';
 import {
   orgs,
   createOrg,
   org,
   deleteOrg,
   deleteNode,
-  isRootNodeOfOrg,
   getChildrenNodes,
-  orgRootNode,
-  searchNodes,
   addMember,
-  getMembersByCode,
   getMembersById,
   addNode,
   updateNode,
   moveNode,
-  removeMembers
+  removeMembers,
+  isRootNode,
+  rootNode
 } from '../graphqlapi';
-import Axios from 'axios';
-import { SDK_VERSION } from '../version';
-import { Org, PaginatedUsers, SortByEnum } from '../../types/graphql.v2';
+import { CommonMessage, Org, PaginatedUsers } from '../../types/graphql.v2';
+import { HttpClient } from '../common/HttpClient';
 
+/**
+ * @class OrgManagementClient 管理组织机构
+ * @description 一个 Authing 用户池可以创建多个组织机构。此模块用于管理 Authing 组织机构，可以进行组织机构的增删改查、添加删除移动节点、导入组织机构等操作。
+ *
+ * @example
+ *
+ * 请使用以下方式使用该模块：
+ * \`\`\`javascript
+ * import { ManagementClient } from "authing-js-sdk"
+ * const managementClient = new ManagementClient({
+ *    userPoolId: "YOUR_USERPOOL_ID",
+ *    secret: "YOUR_USERPOOL_SECRET",
+ * })
+ * managementClient.org.list // 获取用户池组织机构列表
+ * managementClient.org.moveNode // 获取组织机构详情
+ * managementClient.org.listMembers // 获取节点用户列表
+ * \`\`\`
+ *
+ * @name OrgManagementClient
+ */
 export class OrgManagementClient {
   options: ManagementClientOptions;
   graphqlClient: GraphqlClient;
-  graphqlClientV2: GraphqlClient;
   tokenProvider: ManagementTokenProvider;
+  httpClient: HttpClient;
 
   constructor(
     options: ManagementClientOptions,
     graphqlClient: GraphqlClient,
-    graphqlClientV2: GraphqlClient,
+    httpClient: HttpClient,
     tokenProvider: ManagementTokenProvider
   ) {
     this.options = options;
+    this.httpClient = httpClient;
     this.graphqlClient = graphqlClient;
-    this.graphqlClientV2 = graphqlClientV2;
     this.tokenProvider = tokenProvider;
   }
 
-  buildTree(org: DeepPartial<Org>): ExtendedOrg {
-    (org as any).tree = buildTree(_.cloneDeep(org.nodes) as any);
+  private buildTree(org: DeepPartial<Org>): ExtendedOrg {
+    (org as any).tree = buildTree(JSON.parse(JSON.stringify(org.nodes)) as any);
     return org as ExtendedOrg;
   }
 
   /**
-   * @description 获取用户池组织机构列表
-   * @param page 从 1 开始，默认为 1
-   * @param limit 默认为 10
+   * @name create
+   * @name_zh 创建组织机构
+   * @description 创建组织机构，会创建一个只有一个节点的组织机构。
+   * 如果你想将一个完整的组织树导入进来，请使用 importByJson 方法。
    *
-   */
-  async list(page: number = 1, limit: number = 10) {
-    const {
-      orgs: { list, totalCount }
-    } = await orgs(this.graphqlClientV2, this.tokenProvider, {
-      page,
-      limit
-    });
-    return {
-      totalCount,
-      list: list.map(org => this.buildTree(org))
-    };
-  }
-
-  /**
-   * 创建组织机构
+   * @param {string} name 组织机构名称，该名称会作为该组织机构根节点的名称。
+   * @param {string} [description] 根节点描述
+   * @param {string} [code] 根节点唯一标志，必须为合法的英文字符。
+   *
+   * @example
+   *
+   * const org = await managementClient.org.create('北京非凡科技', '北京非凡科技有限公司', 'feifan');
+   *
    * @memberof OrgManagementClient
    */
   async create(name: string, description?: string, code?: string) {
     const { createOrg: org } = await createOrg(
-      this.graphqlClientV2,
+      this.graphqlClient,
       this.tokenProvider,
       {
         name,
@@ -86,7 +94,70 @@ export class OrgManagementClient {
   }
 
   /**
-   * 往组织机构中添加一个节点
+   * @name deleteById
+   * @name_zh 删除组织机构
+   * @description 删除组织机构树
+   * @param {string} id 组织机构 ID
+   *
+   * @returns {Promise<CommonMessage>}
+   * @memberof OrgManagementClient
+   */
+  async deleteById(id: string): Promise<CommonMessage> {
+    const res = await deleteOrg(this.graphqlClient, this.tokenProvider, {
+      id
+    });
+    return res.deleteOrg;
+  }
+
+  /**
+   * @name list
+   * @name_zh 获取用户池组织机构列表
+   * @description 获取用户池组织机构列表
+   *
+   * @param {number} [page=1]
+   * @param {number} [limit=10]
+   *
+   * @example
+   *
+   * const { totalCount, list } = await managementClient.org.list()
+   *
+   * @returns
+   * @memberof OrgManagementClient
+   */
+  async list(page: number = 1, limit: number = 10) {
+    const {
+      orgs: { list, totalCount }
+    } = await orgs(this.graphqlClient, this.tokenProvider, {
+      page,
+      limit
+    });
+    return {
+      totalCount,
+      list: list.map(org => this.buildTree(org))
+    };
+  }
+
+  /**
+   * @name addNode
+   * @name_zh 添加节点
+   * @description 在组织机构中添加一个节点
+   *
+   * @param {string} orgId 组织机构 ID
+   * @param {string} parentNodeId 父节点 ID
+   * @param {Object} data 节点数据
+   * @param {string} data.name 节点名称
+   * @param {string} [data.code] 节点唯一标志
+   * @param {string} [data.description] 节点描述信息
+   *
+   * @example
+   *
+   * const org = await managementClient.org.create('北京非凡科技', '北京非凡科技有限公司', 'feifan');
+   * const { id: orgId, rootNode } = org
+   * const newOrg = await managementClient.org.addNode(orgId, rootNode.id, { name: '运营部门' })
+   *
+   * // newOrg.nodes.length 现在为 2
+   *
+   * @returns {Promise<Org>}
    * @memberof OrgManagementClient
    */
   async addNode(
@@ -103,7 +174,7 @@ export class OrgManagementClient {
   ) {
     const { name, code, order, nameI18n, description, descriptionI18n } = data;
     const { addNode: org } = await addNode(
-      this.graphqlClientV2,
+      this.graphqlClient,
       this.tokenProvider,
       {
         orgId,
@@ -119,10 +190,30 @@ export class OrgManagementClient {
     return this.buildTree(org);
   }
 
+  /**
+   * @name updateNode
+   * @name_zh 修改节点
+   * @description 修改节点数据
+   *
+   * @param {string} id 节点 ID
+   * @param {Object} updates 修改数据
+   * @param {string} [updates.name] 节点名称
+   * @param {string} [updates.code] 节点唯一标志
+   * @param {string} [updates.description] 节点描述信息
+   *
+   * @example
+   *
+   * await managementClient.org.updateNode("NDOEID", {
+   *    name: '新的节点名称'
+   * })
+   *
+   * @returns {Promise<Org>}
+   * @memberof OrgManagementClient
+   */
   async updateNode(
     id: string,
     updates: {
-      name: string;
+      name?: string;
       code?: string;
       order?: number;
       nameI18n?: string;
@@ -132,7 +223,7 @@ export class OrgManagementClient {
   ) {
     const { name, code, description } = updates;
     const { updateNode: node } = await updateNode(
-      this.graphqlClientV2,
+      this.graphqlClient,
       this.tokenProvider,
       {
         id,
@@ -145,35 +236,36 @@ export class OrgManagementClient {
   }
 
   /**
-   * 通过 ID 查询组织机构
+   * @name findById
+   * @name_zh 获取组织机构详情
+   * @description 通过组织机构 ID 获取组织机构详情
+   *
+   * @param {string} id 组织机构 ID
+   *
+   * @returns {Promise<Org>}
    * @memberof OrgManagementClient
    */
   async findById(id: string) {
-    const { org: data } = await org(this.graphqlClientV2, this.tokenProvider, {
+    const { org: data } = await org(this.graphqlClient, this.tokenProvider, {
       id
     });
     return this.buildTree(data);
   }
 
   /**
-   * 删除组织机构树
-   * @param {string} id
-   * @returns
+   * @name deleteNode
+   * @name_zh 删除节点
+   * @description 删除组织机构树中的某一个节点
+   *
+   * @param {string} orgId 组织机构 ID
+   * @param {string} nodeId 节点 ID
+   *
+   * @returns {Promise<CommonMessage>}
    * @memberof OrgManagementClient
-   */
-  async delete(id: string) {
-    const res = await deleteOrg(this.graphqlClient, this.tokenProvider, {
-      _id: id
-    });
-    return res.deleteOrg;
-  }
-
-  /**
-   * 删除组织机构树中的某一个节点
    */
   async deleteNode(orgId: string, nodeId: string) {
     const { deleteNode: data } = await deleteNode(
-      this.graphqlClientV2,
+      this.graphqlClient,
       this.tokenProvider,
       {
         orgId,
@@ -184,11 +276,25 @@ export class OrgManagementClient {
   }
 
   /**
-   * @description 移动节点
+   * @name moveNode 移动节点
+   * @name_zh 移动节点
+   * @description 移动组织机构节点，移动某节点时需要指定该节点新的父节点。注意不能将一个节点移动到自己的子节点下面。
+   *
+   * @param {string} orgId 组织机构 ID
+   * @param {string} nodeId 需要移动的节点 ID
+   * @param {string} targetParentId 目标父节点 ID
+   *
+   * @example
+   *
+   * await managementClient.org.moveNode("ORGID", "NODEID", "TRAGET_NODE_ID")
+   *
+   * @returns {Promise<Org>} 最新的树结构
+   * @memberof OrgManagementClient
+   *
    */
   async moveNode(orgId: string, nodeId: string, targetParentId: string) {
     const { moveNode: org } = await moveNode(
-      this.graphqlClientV2,
+      this.graphqlClient,
       this.tokenProvider,
       {
         orgId,
@@ -200,323 +306,203 @@ export class OrgManagementClient {
   }
 
   /**
-   * 判断一个节点是不是组织树的根节点
-   * @param {string} orgId
-   * @param {string} nodeId
-   * @returns
+   * @name isRootNode
+   * @name_zh 判断是否为根节点
+   * @description 判断一个节点是不是组织树的根节点
+   *
+   * @param {string} orgId 组织机构 ID
+   * @param {string} nodeId 组织机构 ID
+   *
+   *
+   * @returns {Promise<boolean>}
    * @memberof OrgManagementClient
    */
-  async isRoot(orgId: string, nodeId: string) {
-    const res = await isRootNodeOfOrg(this.graphqlClient, this.tokenProvider, {
-      input: {
-        orgId,
-        groupId: nodeId
-      }
+  async isRootNode(orgId: string, nodeId: string): Promise<boolean> {
+    const res = await isRootNode(this.graphqlClient, this.tokenProvider, {
+      orgId,
+      nodeId
     });
-    return res.isRootNodeOfOrg;
+    return res.isRootNode;
   }
 
   /**
-   * 查询节点子节点列表
-   * @param {string} orgId
-   * @param {string} nodeId
-   * @returns
+   * @name listChildren
+   * @name_zh 获取子节点列表
+   * @description 查询一个节点的子节点列表
+   *
+   * @param {string} orgId 组织机构 ID
+   * @param {string} nodeId 组织机构 ID
+   *
+   * @example
+   *
+   * // 子节点列表
+   * cosnt children = await managementClient.org.moveNode("ORGID", "NODEID")
+   *
+   *
+   * @returns {Promise<Node[]>}
    * @memberof OrgManagementClient
    */
-  async childrenNodes(orgId: string, nodeId: string) {
-    const res = await getChildrenNodes(
-      this.graphqlClientV2,
-      this.tokenProvider,
-      {
-        orgId,
-        nodeId
-      }
-    );
+  async listChildren(orgId: string, nodeId: string) {
+    const res = await getChildrenNodes(this.graphqlClient, this.tokenProvider, {
+      orgId,
+      nodeId
+    });
     return res.childrenNodes;
   }
 
   /**
-   * 查询组织机构树根节点
+   * @name rootNode
+   * @name_zh 获取根节点
+   * @description 获取一个组织的根节点
+   *
+   * @param {string} orgId 组织机构 ID
+   *
+   * @example
+   *
+   * const rootNode = await managementClient.org.rootNode("ORGID")
+   *
+   * @returns {Promise<Node[]>}
    * @memberof OrgManagementClient
    */
-  async rootNode(id: string) {
-    const res = await orgRootNode(this.graphqlClient, this.tokenProvider, {
-      _id: id
+  async rootNode(orgId: string) {
+    const res = await rootNode(this.graphqlClient, this.tokenProvider, {
+      orgId
     });
-    return res.orgRootNode;
+    return res.rootNode;
   }
 
   /**
-   * 根据 Group 的自定义字段查询节点
+   * @name importByJson
+   * @name_zh 通过 JSON 导入
+   * @description 通过一个 JSON 树结构导入组织机构
    *
-   * @param {SearchOrgNodesVariables} options
+   * @param {Object} json JSON 格式的树结构，详细格式请见示例代码。
+   *
+   * @example
+   *
+   * const tree = {
+   *   name: '北京非凡科技有限公司',
+   *   code: 'feifan',
+   *   children: [
+   *      {
+   *          code: 'operation',
+   *          name: '运营',
+   *          description: '商业化部门'
+   *       },
+   *       {
+   *         code: 'dev',
+   *         name: '研发',
+   *         description: '研发部门',
+   *         children: [
+   *           {
+   *             code: 'backend',
+   *             name: '后端',
+   *             description: '后端研发部门'
+   *           }
+   *         ]
+   *       }
+   *     ]
+   *   };
+   * const org = await managementClient.org.importByJson(tree);
+   *
+   * @returns {Promise<Node[]>}
    * @memberof OrgManagementClient
    */
-  async searchNodes(options: SearchOrgNodesVariables) {
-    let { orgId, name = '', metadata = [] } = options;
-    if (!name && metadata.length === 0) {
-      this.options.onError(500, 'Plesas Provide name or metadata');
-    }
-
-    if (metadata) {
-      metadata = metadata.map(metadata => {
-        if (typeof metadata.value !== 'string') {
-          metadata.value = JSON.stringify(metadata.value);
-        }
-        return metadata;
-      });
-    }
-    const res = await searchNodes(this.graphqlClient, this.tokenProvider, {
-      orgId,
-      name,
-      metadata
-    });
-    return res.searchOrgNodes;
-  }
-
-  /**
-   * @description 通过一个 JSON 导入树机构
-   *
-   */
-  async import(json: { [x: string]: any }) {
-    const api = `${this.options.host}/v2/api/org/import-by-json`;
-    const res = await Axios.post(api, json, {
-      headers: {
-        'x-authing-userpool-id': this.options.userPoolId,
-        'x-authing-sdk-version': SDK_VERSION,
-        'x-authing-request-from': 'sdk'
+  async importByJson(json: { [x: string]: any }) {
+    const data = await this.httpClient.request({
+      method: 'POST',
+      url: `${this.options.host}/api/v2/orgs/import`,
+      data: {
+        filetype: 'json',
+        file: json
       }
     });
-    return res.data as Org;
+    return data;
   }
 
   /**
+   * @name addMembers
+   * @name_zh 添加成功
    * @description 节点添加成员
    *
-   */
-  async addMember(
-    nodeId: string,
-    userId: string,
-    isLeader?: boolean
-  ): Promise<PaginatedUsers>;
-  async addMember(
-    orgId: string,
-    nodeCode: string,
-    userId: string,
-    isLeader?: boolean
-  ): Promise<PaginatedUsers>;
-  async addMember(arg1: any, arg2: any, arg3?: any, arg4?: boolean) {
-    if (arguments.length === 4) {
-      const orgId = arg1;
-      const nodeCode = arg2;
-      const userId = arg3;
-      const isLeader = arg4 || false;
-      const { addMember: data } = await addMember(
-        this.graphqlClientV2,
-        this.tokenProvider,
-        {
-          orgId,
-          nodeCode,
-          userIds: [userId],
-          isLeader
-        }
-      );
-      return data.users;
-    } else {
-      const nodeId = arg1;
-      const userId = arg2;
-      const isLeader = arg3 || false;
-      const { addMember: data } = await addMember(
-        this.graphqlClientV2,
-        this.tokenProvider,
-        {
-          nodeId,
-          userIds: [userId],
-          isLeader
-        }
-      );
-      return data.users;
-    }
-  }
-
-  /**
-   * @description 节点批量添加成员
+   * @param {string} nodeId 节点 ID
+   * @param {string[]} userIds 用户 ID 列表
+   *
+   * @returns {Promise<PaginatedUsers>}
+   * @memberof OrgManagementClient
    *
    */
-  async addMembers(
-    nodeId: string,
-    userIds: string[],
-    isLeader?: boolean
-  ): Promise<PaginatedUsers>;
-  async addMembers(
-    orgId: string,
-    nodeCode: string,
-    userIds: string[],
-    isLeader?: boolean
-  ): Promise<PaginatedUsers>;
-  async addMembers(arg1: any, arg2: any, arg3?: any, arg4?: any) {
-    if (typeof arg2 === 'string') {
-      const orgId = arg1;
-      const nodeCode = arg2;
-      const userIds = arg3;
-      const isLeader = arg4 || false;
-      const res = await addMember(this.graphqlClientV2, this.tokenProvider, {
-        orgId,
-        nodeCode,
-        userIds,
-        isLeader
-      });
-      return res.addMember.users;
-    } else {
-      const nodeId = arg1;
-      const userIds = arg2;
-      const isLeader = arg3 || false;
-      const res = await addMember(this.graphqlClientV2, this.tokenProvider, {
+  async addMembers(nodeId: string, userIds: string[]): Promise<PaginatedUsers> {
+    const { addMember: data } = await addMember(
+      this.graphqlClient,
+      this.tokenProvider,
+      {
         nodeId,
-        userIds,
-        isLeader
-      });
-      return res.addMember.users;
-    }
+        userIds
+      }
+    );
+    return data.users;
   }
 
-  async getMembers(
+  /**
+   * @name listMembers
+   * @name_zh 获取节点成员
+   * @description 获取节点成员，可以获取直接添加到该节点中的用户，也可以获取到该节点子节点的用户。
+   *
+   * @param {string} nodeId 节点 ID
+   * @param {Object} options 查询参数
+   * @param {number} [options.page=1]
+   * @param {number} [options.limit=10]
+   * @param {boolean} [options.includeChildrenNodes=false] 是否获取所有子节点的成员
+   *
+   *
+   * @returns {Promise<PaginatedUsers>}
+   * @memberof OrgManagementClient
+   *
+   */
+  async listMembers(
     nodeId: string,
     options?: {
       page?: number;
       limit?: number;
-      sortBy?: SortByEnum;
       includeChildrenNodes?: boolean;
     }
-  ): Promise<PaginatedUsers>;
-  async getMembers(
-    orgId: string,
-    nodeCode: string,
-    options?: {
-      page?: number;
-      limit?: number;
-      sortBy?: SortByEnum;
-      includeChildrenNodes?: boolean;
-    }
-  ): Promise<PaginatedUsers>;
-  async getMembers(arg1: any, arg2?: any, arg3?: any): Promise<PaginatedUsers> {
-    if (arg3 || (arg2 && typeof arg2 === 'string')) {
-      const orgId = arg1;
-      const code = arg2;
-      const options = arg3 || {};
-      const { nodeByCode } = await getMembersByCode(
-        this.graphqlClientV2,
-        this.tokenProvider,
-        {
-          orgId,
-          code,
-          ...options
-        }
-      );
-      return nodeByCode.users;
-    } else {
-      const id = arg1;
-      const options = arg2 || {};
-      const { nodeById } = await getMembersById(
-        this.graphqlClientV2,
-        this.tokenProvider,
-        {
-          id,
-          ...options
-        }
-      );
-      return nodeById.users;
-    }
-  }
-
-  /**
-   * @description 移除用户
-   *
-   */
-  async removeMember(nodeId: string, userId: string): Promise<PaginatedUsers>;
-  async removeMember(
-    orgId: string,
-    nodeCode: string,
-    userId: string
-  ): Promise<PaginatedUsers>;
-  async removeMember(
-    arg1: any,
-    arg2: any,
-    arg3?: any
   ): Promise<PaginatedUsers> {
-    if (arg3) {
-      const orgId = arg1;
-      const code = arg2;
-      const userId = arg3;
-      const { removeMember: data } = await removeMembers(
-        this.graphqlClientV2,
-        this.tokenProvider,
-        {
-          orgId,
-          nodeCode: code,
-          userIds: [userId]
-        }
-      );
-      return data.users;
-    } else {
-      const nodeId = arg1;
-      const userId = arg2;
-      const { removeMember: data } = await removeMembers(
-        this.graphqlClientV2,
-        this.tokenProvider,
-        {
-          nodeId,
-          userIds: [userId]
-        }
-      );
-      return data.users;
-    }
+    const { nodeById } = await getMembersById(
+      this.graphqlClient,
+      this.tokenProvider,
+      {
+        id: nodeId,
+        ...options
+      }
+    );
+    return nodeById.users;
   }
 
   /**
-   * @description 批量移除用户
+   * @name removeMembers
+   * @name_zh 删除成功
+   * @description 删除节点成员
+   *
+   * @param {string} nodeId 节点 ID
+   * @param {string[]} userIds 用户 ID 列表
+   *
+   * @returns {Promise<PaginatedUsers>}
+   * @memberof OrgManagementClient
    *
    */
   async removeMembers(
     nodeId: string,
     userIds: string[]
-  ): Promise<PaginatedUsers>;
-  async removeMembers(
-    orgId: string,
-    nodeCode: string,
-    userIds: string[]
-  ): Promise<PaginatedUsers>;
-  async removeMembers(
-    arg1: any,
-    arg2: any,
-    arg3?: any
   ): Promise<PaginatedUsers> {
-    if (arg3) {
-      const orgId = arg1;
-      const code = arg2;
-      const userIds = arg3;
-      const { removeMember: data } = await removeMembers(
-        this.graphqlClientV2,
-        this.tokenProvider,
-        {
-          orgId,
-          nodeCode: code,
-          userIds
-        }
-      );
-      return data.users;
-    } else {
-      const nodeId = arg1;
-      const userIds = arg2;
-      const { removeMember: data } = await removeMembers(
-        this.graphqlClientV2,
-        this.tokenProvider,
-        {
-          nodeId,
-          userIds
-        }
-      );
-      return data.users;
-    }
+    const { removeMember: data } = await removeMembers(
+      this.graphqlClient,
+      this.tokenProvider,
+      {
+        nodeId,
+        userIds
+      }
+    );
+    return data.users;
   }
 }

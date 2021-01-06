@@ -1,86 +1,6 @@
-import {
-  CheckLoginStatus,
-  CheckLoginStatusVariables,
-  CheckLoginStatusDocument,
-  SendVerifyEmail,
-  SendVerifyEmailDocument,
-  SendVerifyEmailVariables,
-  AddGroupMetadata,
-  AddGroupMetadataDocument,
-  AddGroupMetadataVariables,
-  AddUserToRbacGroup,
-  AddUserToRbacGroupDocument,
-  AddUserToRbacGroupVariables,
-  CreateRbacGroup,
-  CreateRbacGroupDocument,
-  CreateRbacGroupVariables,
-  RbacGroup,
-  RbacGroupDocument,
-  RbacGroupVariables,
-  IsUserInGroup,
-  IsUserInGroupDocument,
-  IsUserInGroupVariables,
-  UserGroupList,
-  UserGroupListDocument,
-  UserGroupListVariables,
-  CreateOidcApp,
-  CreateOidcAppDocument,
-  CreateOidcAppVariables,
-  QueryOidcAppInfoByDomainVariables,
-  QueryOidcAppInfoByDomain,
-  QueryOidcAppInfoByDomainDocument,
-  GetOidcAppList,
-  GetOidcAppListDocument,
-  GetOidcAppListVariables,
-  GetSamlIdentityProviderList,
-  GetSamlIdentityProviderListDocument,
-  GetSamlIdentityProviderListVariables,
-  IsDomainAvaliable,
-  IsDomainAvaliableDocument,
-  IsDomainAvaliableVariables,
-  DeleteOrg,
-  DeleteOrgDocument,
-  DeleteOrgVariables,
-  IsRootNodeOfOrg,
-  IsRootNodeOfOrgDocument,
-  IsRootNodeOfOrgVariables,
-  OrgRootNodeDocument,
-  OrgRootNode,
-  OrgRootNodeVariables,
-  SearchOrgNodes,
-  SearchOrgNodesDocument,
-  SearchOrgNodesVariables,
-  AddCollaborator,
-  AddCollaboratorDocument,
-  AddCollaboratorVariables,
-  QueryPermissionList,
-  QueryPermissionListDocument,
-  QueryPermissionListVariables,
-  Register,
-  RegisterDocument,
-  RegisterVariables,
-  CreateInterConnection,
-  CreateInterConnectionDocument,
-  CreateInterConnectionVariables,
-  CreateUserWithoutAuthentication,
-  CreateUserWithoutAuthenticationDocument,
-  CreateUserWithoutAuthenticationVariables,
-  InterConnections,
-  InterConnectionsDocument,
-  InterConnectionsVariables,
-  PasswordLessForceLogin,
-  PasswordLessForceLoginDocument,
-  PasswordLessForceLoginVariables,
-  UserExistVariables,
-  UserExist,
-  UserExistDocument,
-  UserPermissionListVariables,
-  UserPermissionList,
-  UserPermissionListDocument
-} from '../types/graphql.v1';
 import { GraphqlClient } from './common/GraphqlClient';
 import { ManagementTokenProvider } from './management/ManagementTokenProvider';
-import { AuthenticationTokenProvider } from './auth/AuthenticationTokenProvider';
+import { AuthenticationTokenProvider } from './authentication/AuthenticationTokenProvider';
 import {
   CreateUserResponse,
   CreateUserDocument,
@@ -256,12 +176,89 @@ import {
   RemoveUdvVariables,
   RemoveUdvResponse,
   RemoveUdvDocument,
-  AddUdfVariables,
-  AddUdfResponse,
-  AddUdfDocument,
+  SetUdfVariables,
+  SetUdfResponse,
+  SetUdfDocument,
   RemoveUdfVariables,
   RemoveUdfResponse,
-  RemoveUdfDocument
+  RemoveUdfDocument,
+  DeleteRoleVariables,
+  DeleteRoleResponse,
+  DeleteRoleDocument,
+  DeleteRolesResponse,
+  DeleteRolesVariables,
+  DeleteRolesDocument,
+  PoliciesVariables,
+  PoliciesResponse,
+  PoliciesDocument,
+  CreatePolicyVariables,
+  CreatePolicyDocument,
+  PolicyVariables,
+  CreatePolicyResponse,
+  PolicyResponse,
+  PolicyDocument,
+  UpdatePolicyVariables,
+  UpdatePolicyResponse,
+  UpdatePolicyDocument,
+  DeletePolicyVariables,
+  DeletePoliciesResponse,
+  DeletePolicyDocument,
+  DeletePoliciesVariables,
+  DeletePolicyResponse,
+  DeletePoliciesDocument,
+  PolicyAssignmentsVariables,
+  PolicyAssignmentsResponse,
+  PolicyAssignmentsDocument,
+  AddPolicyAssignmentsVariables,
+  AddPolicyAssignmentsResponse,
+  AddPolicyAssignmentsDocument,
+  RemovePolicyAssignmentsVariables,
+  RemovePolicyAssignmentsResponse,
+  RemovePolicyAssignmentsDocument,
+  DeleteOrgResponse,
+  DeleteOrgDocument,
+  DeleteOrgVariables,
+  RootNodeDocument,
+  RootNodeResponse,
+  RootNodeVariables,
+  IsRootNodeDocument,
+  IsRootNodeResponse,
+  IsRootNodeVariables,
+  IsUserExistsVariables,
+  IsUserExistsResponse,
+  IsUserExistsDocument,
+  CheckLoginStatusResponse,
+  CheckLoginStatusDocument,
+  CheckLoginStatusVariables,
+  GroupVariables,
+  GroupResponse,
+  GroupDocument,
+  CreateGroupVariables,
+  CreateGroupResponse,
+  CreateGroupDocument,
+  UpdateGroupVariables,
+  UpdateGroupResponse,
+  UpdateGroupDocument,
+  DeleteGroupsVariables,
+  DeleteGroupsResponse,
+  DeleteGroupsDocument,
+  RemoveUserFromGroupVariables,
+  RemoveUserFromGroupResponse,
+  RemoveUserFromGroupDocument,
+  GroupWithUsersVariables,
+  GroupWithUsersResponse,
+  GroupWithUsersDocument,
+  GetUserGroupsVariables,
+  GetUserGroupsResponse,
+  GetUserGroupsDocument,
+  UnbindEmailVariables,
+  UnbindEmailDocument,
+  UnbindEmailResponse,
+  AccessTokenVariables,
+  AccessTokenDocument,
+  RefreshAccessTokenVariables,
+  RefreshAccessTokenResponse,
+  AccessTokenResponse
 } from '../types/graphql.v2';
 
 export const isAllowed = async (
@@ -270,21 +267,7 @@ export const isAllowed = async (
   variables: IsActionAllowedVariables
 ): Promise<IsActionAllowedResponse> => {
   const query = IsActionAllowedDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const isDomainAvaliable = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: IsDomainAvaliableVariables
-): Promise<IsDomainAvaliable> => {
-  const query = IsDomainAvaliableDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -298,7 +281,7 @@ export const getChildrenNodes = async (
   variables: ChildrenNodesVariables
 ): Promise<ChildrenNodesResponse> => {
   const query = ChildrenNodesDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -312,7 +295,7 @@ export const org = async (
   variables: OrgVariables
 ): Promise<OrgResponse> => {
   const query = OrgDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -320,13 +303,27 @@ export const org = async (
   });
 };
 
-export const isRootNodeOfOrg = async (
+export const isRootNode = async (
   garpqhlClient: GraphqlClient,
   tokenProvider: ManagementTokenProvider,
-  variables: IsRootNodeOfOrgVariables
-): Promise<IsRootNodeOfOrg> => {
-  const query = IsRootNodeOfOrgDocument;
-  const token = await tokenProvider.getAccessToken();
+  variables: IsRootNodeVariables
+): Promise<IsRootNodeResponse> => {
+  const query = IsRootNodeDocument;
+  const token = await tokenProvider.getToken();
+  return await garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const rootNode = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider,
+  variables: RootNodeVariables
+): Promise<RootNodeResponse> => {
+  const query = RootNodeDocument;
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -340,35 +337,7 @@ export const orgs = async (
   variables: OrgsVariables
 ): Promise<OrgsResponse> => {
   const query = OrgsDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const searchNodes = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider,
-  variables: SearchOrgNodesVariables
-): Promise<SearchOrgNodes> => {
-  const query = SearchOrgNodesDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const addCollaborator = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider,
-  variables: AddCollaboratorVariables
-): Promise<AddCollaborator> => {
-  const query = AddCollaboratorDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -382,77 +351,7 @@ export const getUserPoolDetail = async (
   variables: UserpoolVariables
 ): Promise<UserpoolResponse> => {
   const query = UserpoolDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const queryPermissionList = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: QueryPermissionListVariables
-): Promise<QueryPermissionList> => {
-  const query = QueryPermissionListDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const register = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider,
-  variables: RegisterVariables
-): Promise<Register> => {
-  const query = RegisterDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const createInterConnection = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: CreateInterConnectionVariables
-): Promise<CreateInterConnection> => {
-  const query = CreateInterConnectionDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const createUserWithoutAuthentication = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider,
-  variables: CreateUserWithoutAuthenticationVariables
-): Promise<CreateUserWithoutAuthentication> => {
-  const query = CreateUserWithoutAuthenticationDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const interConnections = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: InterConnectionsVariables
-): Promise<InterConnections> => {
-  const query = InterConnectionsDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -466,35 +365,7 @@ export const user = async (
   variables: UserVariables
 ): Promise<UserResponse> => {
   const query = UserDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const passwordLessForceLogin = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider,
-  variables: PasswordLessForceLoginVariables
-): Promise<PasswordLessForceLogin> => {
-  const query = PasswordLessForceLoginDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const orgRootNode = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider,
-  variables: OrgRootNodeVariables
-): Promise<OrgRootNode> => {
-  const query = OrgRootNodeDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -508,7 +379,7 @@ export const createOrg = async (
   variables: CreateOrgVariables
 ): Promise<CreateOrgResponse> => {
   const query = CreateOrgDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -520,93 +391,9 @@ export const deleteOrg = async (
   garpqhlClient: GraphqlClient,
   tokenProvider: ManagementTokenProvider,
   variables: DeleteOrgVariables
-): Promise<DeleteOrg> => {
+): Promise<DeleteOrgResponse> => {
   const query = DeleteOrgDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const GetSAMLIdentityProviderList = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: GetSamlIdentityProviderListVariables
-): Promise<GetSamlIdentityProviderList> => {
-  const query = GetSamlIdentityProviderListDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const GetOIDCAppList = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: GetOidcAppListVariables
-): Promise<GetOidcAppList> => {
-  const query = GetOidcAppListDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const oidcProviderByDomain = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: QueryOidcAppInfoByDomainVariables
-): Promise<QueryOidcAppInfoByDomain> => {
-  const query = QueryOidcAppInfoByDomainDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const CreateOIDCApp = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: CreateOidcAppVariables
-): Promise<CreateOidcApp> => {
-  const query = CreateOidcAppDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const userGroupList = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider,
-  variables: UserGroupListVariables
-): Promise<UserGroupList> => {
-  const query = UserGroupListDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const isUserInGroup = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider,
-  variables: IsUserInGroupVariables
-): Promise<IsUserInGroup> => {
-  const query = IsUserInGroupDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -620,50 +407,8 @@ export const isDenied = async (
   variables: IsActionDeniedVariables
 ): Promise<IsActionDeniedResponse> => {
   const query = IsActionDeniedDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const groupUserList = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider,
-  variables: RbacGroupVariables
-): Promise<RbacGroup> => {
-  const query = RbacGroupDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const createRBACGroup = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider,
-  variables: CreateRbacGroupVariables
-): Promise<CreateRbacGroup> => {
-  const query = CreateRbacGroupDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const checkLoginStatus = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: CheckLoginStatusVariables
-): Promise<CheckLoginStatus> => {
-  const query = CheckLoginStatusDocument;
-  const token = await tokenProvider.getAccessToken();
-  return garpqhlClient.request({
     query,
     token,
     variables
@@ -676,7 +421,7 @@ export const checkPasswordStrength = async (
   variables: CheckPasswordStrengthVariables
 ): Promise<CheckPasswordStrengthResponse> => {
   const query = CheckPasswordStrengthDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -690,7 +435,7 @@ export const registerByEmail = async (
   variables: RegisterByEmailVariables
 ): Promise<RegisterByEmailResponse> => {
   const query = RegisterByEmailDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -704,7 +449,7 @@ export const loginByEmail = async (
   variables: LoginByEmailVariables
 ): Promise<LoginByEmailResponse> => {
   const query = LoginByEmailDocument;
-  const token = tokenProvider.getAccessToken();
+  const token = tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -718,7 +463,7 @@ export const loginByUsername = async (
   variables: LoginByUsernameVariables
 ): Promise<LoginByUsernameResponse> => {
   const query = LoginByUsernameDocument;
-  const token = tokenProvider.getAccessToken();
+  const token = tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -732,7 +477,7 @@ export const loginByPhoneCode = async (
   variables: LoginByPhoneCodeVariables
 ): Promise<LoginByPhoneCodeResponse> => {
   const query = LoginByPhoneCodeDocument;
-  const token = tokenProvider.getAccessToken();
+  const token = tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -746,7 +491,7 @@ export const loginByPhonePassword = async (
   variables: LoginByPhonePasswordVariables
 ): Promise<LoginByPhonePasswordResponse> => {
   const query = LoginByPhonePasswordDocument;
-  const token = tokenProvider.getAccessToken();
+  const token = tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -760,7 +505,7 @@ export const registerByUsername = async (
   variables: RegisterByUsernameVariables
 ): Promise<RegisterByUsernameResponse> => {
   const query = RegisterByUsernameDocument;
-  const token = tokenProvider.getAccessToken();
+  const token = tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -774,35 +519,7 @@ export const registerByPhoneCode = async (
   variables: RegisterByPhoneCodeVariables
 ): Promise<RegisterByPhoneCodeResponse> => {
   const query = RegisterByPhoneCodeDocument;
-  const token = tokenProvider.getAccessToken();
-  return garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const sendVerifyEmail = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: SendVerifyEmailVariables
-): Promise<SendVerifyEmail> => {
-  const query = SendVerifyEmailDocument;
-  const token = await tokenProvider.getAccessToken();
-  return garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const addGroupMetadata = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider,
-  variables: AddGroupMetadataVariables
-): Promise<AddGroupMetadata> => {
-  const query = AddGroupMetadataDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -816,21 +533,7 @@ export const addRole = async (
   variables: CreateRoleVariables
 ): Promise<CreateRoleResponse> => {
   const query = CreateRoleDocument;
-  const token = await tokenProvider.getAccessToken();
-  return await garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const addUserToRBACGroup = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider,
-  variables: AddUserToRbacGroupVariables
-): Promise<AddUserToRbacGroup> => {
-  const query = AddUserToRbacGroupDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -844,7 +547,7 @@ export const assignRole = async (
   variables: AssignRoleVariables
 ): Promise<AssignRoleResponse> => {
   const query = AssignRoleDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -858,7 +561,7 @@ export const revokeRole = async (
   variables: RevokeRoleVariables
 ): Promise<RevokeRoleResponse> => {
   const query = RevokeRoleDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -872,7 +575,7 @@ export const addMember = async (
   variables: AddMemberVariables
 ): Promise<AddMemberResponse> => {
   const query = AddMemberDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -886,7 +589,7 @@ export const getMembersById = async (
   variables: NodeByIdWithMembersVariables
 ): Promise<NodeByIdWithMembersResponse> => {
   const query = NodeByIdWithMembersDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -900,7 +603,7 @@ export const getMembersByCode = async (
   variables: NodeByCodeWithMembersVariables
 ): Promise<NodeByCodeWithMembersResponse> => {
   const query = NodeByCodeWithMembersDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -914,7 +617,7 @@ export const sendEmail = async (
   variables: SendEmailVariables
 ): Promise<SendEmailResponse> => {
   const query = SendEmailDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return await garpqhlClient.request({
     query,
     token,
@@ -928,7 +631,7 @@ export const resetPassword = async (
   variables: ResetPasswordVariables
 ): Promise<ResetPasswordResponse> => {
   const query = ResetPasswordDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -942,21 +645,7 @@ export const users = async (
   variables: UsersVariables
 ): Promise<UsersResponse> => {
   const query = UsersDocument;
-  const token = await tokenProvider.getAccessToken();
-  return garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const getGroupsOfUser = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: GroupsVariables
-): Promise<GroupsResponse> => {
-  const query = GroupsDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -970,7 +659,7 @@ export const updateUserpool = async (
   variables: UpdateUserpoolVariables
 ): Promise<UpdateUserpoolResponse> => {
   const query = UpdateUserpoolDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -984,7 +673,7 @@ export const updateUser = async (
   variables: UpdateUserVariables
 ): Promise<UpdateUserResponse> => {
   const query = UpdateUserDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -998,7 +687,7 @@ export const searchUser = async (
   variables: SearchUserVariables
 ): Promise<SearchUserResponse> => {
   const query = SearchUserDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1012,7 +701,7 @@ export const createUser = async (
   variables: CreateUserVariables
 ): Promise<CreateUserResponse> => {
   const query = CreateUserDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1026,7 +715,7 @@ export const deleteUser = async (
   variables: DeleteUserVariables
 ): Promise<DeleteUserResponse> => {
   const query = DeleteUserDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1040,7 +729,7 @@ export const deleteUsers = async (
   variables: DeleteUsersVariables
 ): Promise<DeleteUsersResponse> => {
   const query = DeleteUsersDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1054,7 +743,7 @@ export const roles = async (
   variables: RolesVariables
 ): Promise<RolesResponse> => {
   const query = RolesDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1068,7 +757,7 @@ export const role = async (
   variables: RoleVariables
 ): Promise<RoleResponse> => {
   const query = RoleDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1082,7 +771,7 @@ export const roleWithUsers = async (
   variables: RoleWithUsersVariables
 ): Promise<RoleWithUsersResponse> => {
   const query = RoleWithUsersDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1096,7 +785,7 @@ export const updateRole = async (
   variables: UpdateRoleVariables
 ): Promise<UpdateRoleResponse> => {
   const query = UpdateRoleDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1110,7 +799,7 @@ export const addNode = async (
   variables: AddNodeVariables
 ): Promise<AddNodeResponse> => {
   const query = AddNodeDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1124,7 +813,7 @@ export const updateNode = async (
   variables: UpdateNodeVariables
 ): Promise<UpdateNodeResponse> => {
   const query = UpdateNodeDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1138,7 +827,7 @@ export const deleteNode = async (
   variables: DeleteNodeVariables
 ): Promise<DeleteNodeResponse> => {
   const query = DeleteNodeDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1152,7 +841,7 @@ export const moveNode = async (
   variables: MoveNodeVariables
 ): Promise<MoveNodeResponse> => {
   const query = MoveNodeDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1166,21 +855,7 @@ export const removeMembers = async (
   variables: RemoveMemberVariables
 ): Promise<RemoveMemberResponse> => {
   const query = RemoveMemberDocument;
-  const token = await tokenProvider.getAccessToken();
-  return garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const getGroups = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: GroupsVariables
-): Promise<GroupsResponse> => {
-  const query = GroupsDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1194,7 +869,7 @@ export const refreshToken = async (
   variables: RefreshTokenVariables
 ): Promise<RefreshTokenResponse> => {
   const query = RefreshTokenDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1202,41 +877,13 @@ export const refreshToken = async (
   });
 };
 
-export const addUserToGroup = async (
+export const isUserExists = async (
   garpqhlClient: GraphqlClient,
   tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: AddUserToGroupVariables
-): Promise<AddUserToGroupResponse> => {
-  const query = AddUserToGroupDocument;
-  const token = await tokenProvider.getAccessToken();
-  return garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const userExists = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: UserExistVariables
-): Promise<UserExist> => {
-  const query = UserExistDocument;
-  const token = await tokenProvider.getAccessToken();
-  return garpqhlClient.request({
-    query,
-    token,
-    variables
-  });
-};
-
-export const userPermissionList = async (
-  garpqhlClient: GraphqlClient,
-  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: UserPermissionListVariables
-): Promise<UserPermissionList> => {
-  const query = UserPermissionListDocument;
-  const token = await tokenProvider.getAccessToken();
+  variables: IsUserExistsVariables
+): Promise<IsUserExistsResponse> => {
+  const query = IsUserExistsDocument;
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1250,7 +897,7 @@ export const updatePassword = async (
   variables: UpdatePasswordVariables
 ): Promise<UpdatePasswordResponse> => {
   const query = UpdatePasswordDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1264,7 +911,7 @@ export const updatePhone = async (
   variables: UpdatePhoneVariables
 ): Promise<UpdatePhoneResponse> => {
   const query = UpdatePhoneDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1278,7 +925,7 @@ export const updateEmail = async (
   variables: UpdateEmailVariables
 ): Promise<UpdateEmailResponse> => {
   const query = UpdateEmailDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1292,7 +939,7 @@ export const bindPhone = async (
   variables: BindPhoneVariables
 ): Promise<BindPhoneResponse> => {
   const query = BindPhoneDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1306,7 +953,7 @@ export const unbindPhone = async (
   variables: UnbindPhoneVariables
 ): Promise<UnbindPhoneResponse> => {
   const query = UnbindPhoneDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1320,7 +967,7 @@ export const userBatch = async (
   variables: UserBatchVariables
 ): Promise<UserBatchResponse> => {
   const query = UserBatchDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1334,7 +981,7 @@ export const getUserRoles = async (
   variables: GetUserRolesVariables
 ): Promise<GetUserRolesResponse> => {
   const query = GetUserRolesDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1348,7 +995,7 @@ export const allow = async (
   variables: AllowVariables
 ): Promise<AllowResponse> => {
   const query = AllowDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1362,7 +1009,7 @@ export const getWhiteList = async (
   variables: WhitelistVariables
 ): Promise<WhitelistResponse> => {
   const query = WhitelistDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1376,7 +1023,7 @@ export const removeWhiteList = async (
   variables: RemoveWhitelistVariables
 ): Promise<RemoveWhitelistResponse> => {
   const query = RemoveWhitelistDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1390,7 +1037,7 @@ export const addWhiteList = async (
   variables: AddWhitelistVariables
 ): Promise<AddWhitelistResponse> => {
   const query = AddWhitelistDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1404,7 +1051,7 @@ export const udv = async (
   variables: UdvVariables
 ): Promise<UdvResponse> => {
   const query = UdvDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1418,7 +1065,7 @@ export const setUdv = async (
   variables: SetUdvVariables
 ): Promise<SetUdvResponse> => {
   const query = SetUdvDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1432,7 +1079,7 @@ export const removeUdv = async (
   variables: RemoveUdvVariables
 ): Promise<RemoveUdvResponse> => {
   const query = RemoveUdvDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1440,13 +1087,13 @@ export const removeUdv = async (
   });
 };
 
-export const addUdf = async (
+export const setUdf = async (
   garpqhlClient: GraphqlClient,
   tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
-  variables: AddUdfVariables
-): Promise<AddUdfResponse> => {
-  const query = AddUdfDocument;
-  const token = await tokenProvider.getAccessToken();
+  variables: SetUdfVariables
+): Promise<SetUdfResponse> => {
+  const query = SetUdfDocument;
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1460,7 +1107,7 @@ export const removeUdf = async (
   variables: RemoveUdfVariables
 ): Promise<RemoveUdfResponse> => {
   const query = RemoveUdfDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
@@ -1474,10 +1121,339 @@ export const udf = async (
   variables: UdfVariables
 ): Promise<UdfResponse> => {
   const query = UdfDocument;
-  const token = await tokenProvider.getAccessToken();
+  const token = await tokenProvider.getToken();
   return garpqhlClient.request({
     query,
     token,
+    variables
+  });
+};
+
+export const deleteRole = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: DeleteRoleVariables
+): Promise<DeleteRoleResponse> => {
+  const query = DeleteRoleDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const deleteRoles = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: DeleteRolesVariables
+): Promise<DeleteRolesResponse> => {
+  const query = DeleteRolesDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const policies = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: PoliciesVariables
+): Promise<PoliciesResponse> => {
+  const query = PoliciesDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const createPolicy = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: CreatePolicyVariables
+): Promise<CreatePolicyResponse> => {
+  const query = CreatePolicyDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const policy = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: PolicyVariables
+): Promise<PolicyResponse> => {
+  const query = PolicyDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const updatePolicy = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: UpdatePolicyVariables
+): Promise<UpdatePolicyResponse> => {
+  const query = UpdatePolicyDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const deletePolicy = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: DeletePolicyVariables
+): Promise<DeletePolicyResponse> => {
+  const query = DeletePolicyDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const deletePolicies = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: DeletePoliciesVariables
+): Promise<DeletePoliciesResponse> => {
+  const query = DeletePoliciesDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const policyAssignments = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: PolicyAssignmentsVariables
+): Promise<PolicyAssignmentsResponse> => {
+  const query = PolicyAssignmentsDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const addPolicyAssignments = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: AddPolicyAssignmentsVariables
+): Promise<AddPolicyAssignmentsResponse> => {
+  const query = AddPolicyAssignmentsDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const removePolicyAssignments = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: RemovePolicyAssignmentsVariables
+): Promise<RemovePolicyAssignmentsResponse> => {
+  const query = RemovePolicyAssignmentsDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const checkLoginStatus = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: CheckLoginStatusVariables
+): Promise<CheckLoginStatusResponse> => {
+  const query = CheckLoginStatusDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const getGroups = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: GroupsVariables
+): Promise<GroupsResponse> => {
+  const query = GroupsDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const group = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: GroupVariables
+): Promise<GroupResponse> => {
+  const query = GroupDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const groupWithUsers = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: GroupWithUsersVariables
+): Promise<GroupWithUsersResponse> => {
+  const query = GroupWithUsersDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const createGroup = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: CreateGroupVariables
+): Promise<CreateGroupResponse> => {
+  const query = CreateGroupDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+export const updateGroup = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: UpdateGroupVariables
+): Promise<UpdateGroupResponse> => {
+  const query = UpdateGroupDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const deleteGroups = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: DeleteGroupsVariables
+): Promise<DeleteGroupsResponse> => {
+  const query = DeleteGroupsDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const addUserToGroup = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: AddUserToGroupVariables
+): Promise<AddUserToGroupResponse> => {
+  const query = AddUserToGroupDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const removeUserFromGroup = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: RemoveUserFromGroupVariables
+): Promise<RemoveUserFromGroupResponse> => {
+  const query = RemoveUserFromGroupDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const getUserGroups = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: GetUserGroupsVariables
+): Promise<GetUserGroupsResponse> => {
+  const query = GetUserGroupsDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const unbindEmail = async (
+  garpqhlClient: GraphqlClient,
+  tokenProvider: ManagementTokenProvider | AuthenticationTokenProvider,
+  variables: UnbindEmailVariables
+): Promise<UnbindEmailResponse> => {
+  const query = UnbindEmailDocument;
+  const token = await tokenProvider.getToken();
+  return garpqhlClient.request({
+    query,
+    token,
+    variables
+  });
+};
+
+export const getAccessToken = async (
+  garpqhlClient: GraphqlClient,
+  variables: AccessTokenVariables
+): Promise<AccessTokenResponse> => {
+  const query = AccessTokenDocument;
+  return garpqhlClient.request({
+    query,
+    variables
+  });
+};
+
+export const refreshAccessToken = async (
+  garpqhlClient: GraphqlClient,
+  variables: RefreshAccessTokenVariables
+): Promise<RefreshAccessTokenResponse> => {
+  const query = RefreshTokenDocument;
+  return garpqhlClient.request({
+    query,
     variables
   });
 };

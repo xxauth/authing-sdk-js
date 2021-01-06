@@ -37,7 +37,33 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 exports.__esModule = true;
 exports.QrCodeAuthenticationClient = void 0;
-var utils_1 = require("./utils");
+var utils_1 = require("../utils");
+/**
+ * @class QrCodeAuthenticationClient 扫码登录模块
+ * @description 此模块用于进行扫码登录，扫码登录分为两种小程序扫码登录（wxqrcode）和 APP 扫码登录（qrcode）。两种扫码登录方式 API 完全一致。
+ *
+ * 使用小程序扫码登录：
+ *
+ * \`\`\`javascript
+ * import { AuthenticationClient } from "authing-js-sdk"
+ * const authenticationClient = new AuthenticationClient({
+ *    appId: "YOUR_APP_ID",
+ * })
+ * authenticationClient.wxqrcode.startScanning() # 开始扫码登录
+ * \`\`\`
+ *
+ * 使用 APP 扫码登录
+ *
+ * \`\`\`javascript
+ * import { AuthenticationClient } from "authing-js-sdk"
+ * const authenticationClient = new AuthenticationClient({
+ *    appId: "YOUR_APP_ID",
+ * })
+ * authenticationClient.qrcode.startScanning() # 开始扫码登录
+ * \`\`\`
+ *
+ * @name QrCodeAuthenticationClient
+ */
 var QrCodeAuthenticationClient = /** @class */ (function () {
     function QrCodeAuthenticationClient(options, tokenProvider, httpClient, scene) {
         this.options = options;
@@ -46,155 +72,55 @@ var QrCodeAuthenticationClient = /** @class */ (function () {
         this.scene = scene;
     }
     /**
-     * @description 生成二维码
+     * @name startScanning
+     * @name_zh 一键开始扫码
+     * @description 一键开始扫码
+     *
+     * @param {string} domId DOM 元素的 ID。
+     * @param {Object} options
+     * @param {number} options.interval 间隔时间，单位为毫秒，默认为 800 毫秒
+     * @param {Function} options.onStart 开始轮询的事件回调函数, 第一个参数为 setInterval 返回的计时器，可以用 clearInterval 取消此计时器
+     * @param {Function} options.onResult 获取到二维码最新状态事件回调函数，第一个参数为的类型为 QRCodeStatus。
+     * @param {Function} options.onScanned 用户首次扫码事件回调函数。此时用户还没有授权，回调的用户信息中通仅包含昵称和头像，用作展示目的。
+     * 出于安全性考虑，默认情况下，userInfo 只会包含昵称（nickname）和头像（photo）两个字段，开发者也可以在后台配置使其返回完整用户信息，
+     * @param {Function} options.onSuccess 用户同意授权事件回调函数。该函数只会回调一次，之后轮询结束。第一个参数为 userInfo 用户信息，第二个参数为 ticket，用于换取用户的详情。
+     * 详情见 https://docs.authing.co/scan-qrcode/app-qrcode/customize.html。
+     * ticket 可以用来换取完整的用户信息，相关接口见 https://docs.authing.co/scan-qrcode/app-qrcode/full-api-list.html。
+     * @param {Function} options.onCancel 用户取消授权事件回调函数。该事件只会回调一次，之后轮询结束。
+     * @param {Function} options.onError 获取二维码状态失败事件回调函数。常见原因为网络失败等，每次查询失败时都会回调。回调参数 data 示例如 {"code": 2241,"message": "二维码不存在" }
+     * @param {Function} options.onExpired 二维码失效时被回调，只回调一次，之后轮询结束。
+     * @param {Function} options.onCodeShow 二维码首次成功显示的事件。
+     * @param {Function} options.onCodeLoaded 二维码首次成功 Load 的事件。
+     * @param {Function} options.onCodeLoadFailed 二维码加载失败的事件。
+     * @param {Function} options.onCodeDestroyed 二维码被销毁的事件。
+     * @param {Object} options.size 二维码图片大小，默认为 240 * 240，单位为 px 。
+     * @param {number} options.size.height 高度
+     * @param {number} options.size.width 宽度
+     * @param {Object} options.containerSize DOM 容器大小，默认为 300 * 300，单位为 px 。
+     * @param {number} options.containerSize.height 高度
+     * @param {number} options.containerSize.width 宽度
+     * @param {Object} options.tips 自定义提示信息
+     * @param {number} options.tips.title
+     * @param {number} options.tips.scanned
+     * @param {Object} options.tips.succeed
+     * @param {number} options.tips.canceled
+     * @param {number} options.tips.expired
+     * @param {number} options.tips.retry
+     * @param {number} options.tips.failed
+     *
+     * @example
+     *
+     * authenticationClient.wxqrcode.startScanning("qrcode", {
+     *  onSuccess: (userInfo, ticket) => {
+     *    console.log(userInfo, ticket)
+     *  },
+     *  onError: (message) => onFail && onFail(`${message}`),
+     * });
+     *
+     * @returns {null}
+     * @memberof QrCodeAuthenticationClient
      *
      */
-    QrCodeAuthenticationClient.prototype.geneCode = function (customData) {
-        if (customData === void 0) { customData = {}; }
-        return __awaiter(this, void 0, void 0, function () {
-            var api, data;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        api = this.options.host + "/v2/api/qrcode/gene";
-                        return [4 /*yield*/, this.httpClient.request({
-                                method: 'POST',
-                                url: api,
-                                data: {
-                                    scene: this.scene,
-                                    customData: customData
-                                }
-                            })];
-                    case 1:
-                        data = _a.sent();
-                        return [2 /*return*/, data];
-                }
-            });
-        });
-    };
-    /**
-     * @description 检查二维码状态
-     *
-     */
-    QrCodeAuthenticationClient.prototype.checkStatus = function (random) {
-        return __awaiter(this, void 0, void 0, function () {
-            var api, data;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        api = this.options.host + "/v2/api/qrcode/check?random=" + random;
-                        return [4 /*yield*/, this.httpClient.request({
-                                method: 'GET',
-                                url: api
-                            })];
-                    case 1:
-                        data = _a.sent();
-                        return [2 /*return*/, data];
-                }
-            });
-        });
-    };
-    QrCodeAuthenticationClient.prototype.exchangeUserInfo = function (ticket) {
-        return __awaiter(this, void 0, void 0, function () {
-            var api, userInfo;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        api = this.options.host + "/v2/api/qrcode/userinfo";
-                        return [4 /*yield*/, this.httpClient.request({
-                                method: 'POST',
-                                url: api,
-                                data: {
-                                    ticket: ticket
-                                }
-                            })];
-                    case 1:
-                        userInfo = _a.sent();
-                        return [2 /*return*/, userInfo];
-                }
-            });
-        });
-    };
-    /**
-     * @description 开始轮询二维码状态
-     *
-     */
-    QrCodeAuthenticationClient.prototype.startPolling = function (random, options) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _a, interval, onStart, onResult, onScanned, onExpired, onSuccess, onCancel, onError, calledOnScanned, callOnPoolingStart, timer;
-            var _this = this;
-            return __generator(this, function (_b) {
-                options = options || {};
-                _a = options.interval, interval = _a === void 0 ? 800 : _a, onStart = options.onStart, onResult = options.onResult, onScanned = options.onScanned, onExpired = options.onExpired, onSuccess = options.onSuccess, onCancel = options.onCancel, onError = options.onError;
-                calledOnScanned = false;
-                callOnPoolingStart = false;
-                timer = setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
-                    var data, status_1, ticket, userInfo, error_1;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0:
-                                // 开始轮询时回调 onPollingStart
-                                if (onStart && !callOnPoolingStart) {
-                                    onStart(timer);
-                                    callOnPoolingStart = true;
-                                }
-                                _a.label = 1;
-                            case 1:
-                                _a.trys.push([1, 3, , 4]);
-                                return [4 /*yield*/, this.checkStatus(random)];
-                            case 2:
-                                data = _a.sent();
-                                status_1 = data.status, ticket = data.ticket, userInfo = data.userInfo;
-                                // 每次获取到数据都回调 onResult 函数
-                                if (onResult) {
-                                    onResult(data);
-                                }
-                                // 过期
-                                if (status_1 === -1) {
-                                    clearInterval(timer);
-                                    if (onExpired) {
-                                        onExpired();
-                                    }
-                                }
-                                // 未扫码
-                                if (status_1 === 0) {
-                                }
-                                // 已扫码
-                                if (status_1 === 1) {
-                                    if (onScanned && !calledOnScanned) {
-                                        onScanned(userInfo);
-                                        calledOnScanned = true;
-                                    }
-                                }
-                                // 已授权
-                                if (status_1 === 2) {
-                                    clearInterval(timer);
-                                    if (onSuccess) {
-                                        onSuccess(userInfo, ticket);
-                                    }
-                                }
-                                // 已取消
-                                if (status_1 === 3) {
-                                    clearInterval(timer);
-                                    if (onCancel) {
-                                        onCancel();
-                                    }
-                                }
-                                return [3 /*break*/, 4];
-                            case 3:
-                                error_1 = _a.sent();
-                                if (onError) {
-                                    onError(error_1);
-                                }
-                                return [2 /*return*/];
-                            case 4: return [2 /*return*/];
-                        }
-                    });
-                }); }, interval);
-                return [2 /*return*/, timer];
-            });
-        });
-    };
     QrCodeAuthenticationClient.prototype.startScanning = function (domId, options) {
         return __awaiter(this, void 0, void 0, function () {
             function genRetry(qrcodeElm, tipText, retryId) {
@@ -273,6 +199,13 @@ var QrCodeAuthenticationClient = /** @class */ (function () {
                         node.removeChild(child);
                 };
                 genTip = function (text) {
+                    var formattedText;
+                    try {
+                        formattedText = JSON.parse(text).message || text;
+                    }
+                    catch (e) {
+                        formattedText = text;
+                    }
                     var tip = document.createElement('span');
                     tip.className = 'authing__heading-subtitle';
                     if (!needGenerate) {
@@ -283,7 +216,7 @@ var QrCodeAuthenticationClient = /** @class */ (function () {
                         utils_1.createCssClassStyleSheet('__authing__heading-subtitle-style', 'display: block;font-weight: 400;font-size: 12px;color: #888;');
                         tip.classList.add('__authing__heading-subtitle-style');
                     }
-                    tip.innerHTML = text;
+                    tip.innerHTML = formattedText;
                     return tip;
                 };
                 genImage = function (src) {
@@ -333,7 +266,7 @@ var QrCodeAuthenticationClient = /** @class */ (function () {
                     return shadow;
                 };
                 start = function () { return __awaiter(_this, void 0, void 0, function () {
-                    var random, url, data, error_2, qrcodeImage;
+                    var random, url, data, error_1, qrcodeImage;
                     var _this = this;
                     return __generator(this, function (_a) {
                         switch (_a.label) {
@@ -351,11 +284,11 @@ var QrCodeAuthenticationClient = /** @class */ (function () {
                                 url = data.url;
                                 return [3 /*break*/, 4];
                             case 3:
-                                error_2 = _a.sent();
-                                error_2 = error_2;
-                                genRetry(node, error_2.message);
+                                error_1 = _a.sent();
+                                error_1 = error_1;
+                                genRetry(node, error_1.message);
                                 if (onCodeLoadFailed) {
-                                    onCodeLoadFailed(error_2);
+                                    onCodeLoadFailed(error_1);
                                 }
                                 return [2 /*return*/];
                             case 4:
@@ -429,6 +362,218 @@ var QrCodeAuthenticationClient = /** @class */ (function () {
                 }); };
                 start();
                 return [2 /*return*/];
+            });
+        });
+    };
+    /**
+     * @name geneCode
+     * @name_zh 生成二维码
+     * @description 生成二维码
+     *
+     * @example
+     * const authenticationClient = new AuthenticationClient({
+     *    appId: "YOUR_APP_ID",
+     * })
+     * const { url, random } = await authenticationClient.wxqrcode.geneCode()
+     *
+     * # random 二维码唯一 ID
+     * # url 二维码链接
+     *
+     * @returns {Promise<QRCodeGenarateResult>}
+     * @memberof QrCodeAuthenticationClient
+     */
+    QrCodeAuthenticationClient.prototype.geneCode = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var api, data;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        api = this.options.host + "/api/v2/qrcode/gene";
+                        return [4 /*yield*/, this.httpClient.request({
+                                method: 'POST',
+                                url: api,
+                                data: {
+                                    scene: this.scene
+                                }
+                            })];
+                    case 1:
+                        data = _a.sent();
+                        return [2 /*return*/, data];
+                }
+            });
+        });
+    };
+    /**
+     * @name checkStatus
+     * @name_zh 检测扫码状态
+     * @description 检测扫码状态
+     *
+     * @param {string} random
+     *
+     * @example
+     *
+     * const authenticationClient = new AuthenticationClient({
+     *    appId: "YOUR_APP_ID",
+     * })
+     * const { random, status, ticket, userInfo } = await authenticationClient.wxqrcode.checkStatus('RANDOM')
+     * # status: 二维码状态: 0 - 未使用, 1 - 已扫码, 2 - 已授权, 3 - 取消授权, -1 - 已过期
+     * # ticket: 用于换取用户信息的一个随机字符串
+     * # userInfo: 用户信息
+     *
+     * @returns {Promise<QRCodeStatus>}
+     * @memberof QrCodeAuthenticationClient
+     */
+    QrCodeAuthenticationClient.prototype.checkStatus = function (random) {
+        return __awaiter(this, void 0, void 0, function () {
+            var api, data;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        api = this.options.host + "/api/v2/qrcode/check?random=" + random;
+                        return [4 /*yield*/, this.httpClient.request({
+                                method: 'GET',
+                                url: api
+                            })];
+                    case 1:
+                        data = _a.sent();
+                        return [2 /*return*/, data];
+                }
+            });
+        });
+    };
+    /**
+     * @name exchangeUserInfo
+     * @name_zh 使用 ticket 交换用户信息
+     * @description 使用 ticket 交换用户信息
+     *
+     * @example
+     *
+     * const authenticationClient = new AuthenticationClient({
+     *    appId: "YOUR_APP_ID",
+     * })
+     * const user = await authenticationClient.wxqrcode.exchangeUserInfo('TICKET')
+     * # user: 完整的用户信息，其中 user.token 为用户的登录凭证。
+     *
+     * @param {string} ticket ticket
+     * @returns {Promise<Partial<User>>}
+     * @memberof QrCodeAuthenticationClient
+     */
+    QrCodeAuthenticationClient.prototype.exchangeUserInfo = function (ticket) {
+        return __awaiter(this, void 0, void 0, function () {
+            var api, userInfo;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        api = this.options.host + "/api/v2/qrcode/userinfo";
+                        return [4 /*yield*/, this.httpClient.request({
+                                method: 'POST',
+                                url: api,
+                                data: {
+                                    ticket: ticket
+                                }
+                            })];
+                    case 1:
+                        userInfo = _a.sent();
+                        return [2 /*return*/, userInfo];
+                }
+            });
+        });
+    };
+    /**
+     * @name startPolling
+     * @name_zh 开始轮询二维码状态
+     * @description 开始轮询二维码状态
+     *
+     * @param {string} random 二维码唯一 ID
+     * @param {Object} options
+     * @param {number} options.interval 间隔时间，单位为毫秒，默认为 800 毫秒
+     * @param {Function} options.onStart 开始轮询的事件回调函数, 第一个参数为 setInterval 返回的计时器，可以用 clearInterval 取消此计时器
+     * @param {Function} options.onResult 获取到二维码最新状态事件回调函数，第一个参数为的类型为 QRCodeStatus。
+     * @param {Function} options.onScanned 用户首次扫码事件回调函数。此时用户还没有授权，回调的用户信息中通仅包含昵称和头像，用作展示目的。
+     * 出于安全性考虑，默认情况下，userInfo 只会包含昵称（nickname）和头像（photo）两个字段，开发者也可以在后台配置使其返回完整用户信息，
+     * @param {Function} options.onSuccess 用户同意授权事件回调函数。该函数只会回调一次，之后轮询结束。第一个参数为 userInfo 用户信息，第二个参数为 ticket，用于换取用户的详情。
+     * 详情见 https://docs.authing.co/scan-qrcode/app-qrcode/customize.html。
+     * ticket 可以用来换取完整的用户信息，相关接口见 https://docs.authing.co/scan-qrcode/app-qrcode/full-api-list.html。
+     * @param {Function} options.onCancel 用户取消授权事件回调函数。该事件只会回调一次，之后轮询结束。
+     * @param {Function} options.onError 获取二维码状态失败事件回调函数。常见原因为网络失败等，每次查询失败时都会回调。回调参数 data 示例如 {"code": 2241,"message": "二维码不存在" }
+     * @param {Function} options.onExpired 二维码失效时被回调，只回调一次，之后轮询结束。
+     *
+     * @returns {null}
+     * @memberof QrCodeAuthenticationClient
+     */
+    QrCodeAuthenticationClient.prototype.startPolling = function (random, options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, interval, onStart, onResult, onScanned, onExpired, onSuccess, onCancel, onError, calledOnScanned, callOnPoolingStart, timer;
+            var _this = this;
+            return __generator(this, function (_b) {
+                options = options || {};
+                _a = options.interval, interval = _a === void 0 ? 800 : _a, onStart = options.onStart, onResult = options.onResult, onScanned = options.onScanned, onExpired = options.onExpired, onSuccess = options.onSuccess, onCancel = options.onCancel, onError = options.onError;
+                calledOnScanned = false;
+                callOnPoolingStart = false;
+                timer = setInterval(function () { return __awaiter(_this, void 0, void 0, function () {
+                    var data, status_1, ticket, userInfo, error_2;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                // 开始轮询时回调 onPollingStart
+                                if (onStart && !callOnPoolingStart) {
+                                    onStart(timer);
+                                    callOnPoolingStart = true;
+                                }
+                                _a.label = 1;
+                            case 1:
+                                _a.trys.push([1, 3, , 4]);
+                                return [4 /*yield*/, this.checkStatus(random)];
+                            case 2:
+                                data = _a.sent();
+                                status_1 = data.status, ticket = data.ticket, userInfo = data.userInfo;
+                                // 每次获取到数据都回调 onResult 函数
+                                if (onResult) {
+                                    onResult(data);
+                                }
+                                // 过期
+                                if (status_1 === -1) {
+                                    clearInterval(timer);
+                                    if (onExpired) {
+                                        onExpired();
+                                    }
+                                }
+                                // 未扫码
+                                if (status_1 === 0) {
+                                }
+                                // 已扫码
+                                if (status_1 === 1) {
+                                    if (onScanned && !calledOnScanned) {
+                                        onScanned(userInfo);
+                                        calledOnScanned = true;
+                                    }
+                                }
+                                // 已授权
+                                if (status_1 === 2) {
+                                    clearInterval(timer);
+                                    if (onSuccess) {
+                                        onSuccess(userInfo, ticket);
+                                    }
+                                }
+                                // 已取消
+                                if (status_1 === 3) {
+                                    clearInterval(timer);
+                                    if (onCancel) {
+                                        onCancel();
+                                    }
+                                }
+                                return [3 /*break*/, 4];
+                            case 3:
+                                error_2 = _a.sent();
+                                if (onError) {
+                                    onError(error_2);
+                                }
+                                return [2 /*return*/];
+                            case 4: return [2 /*return*/];
+                        }
+                    });
+                }); }, interval);
+                return [2 /*return*/, timer];
             });
         });
     };

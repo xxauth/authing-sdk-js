@@ -26,7 +26,9 @@ export const getOptionsFromEnv = (): ManagementClientOptions => {
   return {
     userPoolId: process.env.AUTHING_USERPOOL_ID,
     secret: process.env.AUTHING_USERPOOL_SECRET,
-    host: process.env.AUTHING_HOST
+    appId: process.env.AUTHING_APP_ID,
+    host: process.env.AUTHING_HOST,
+    timeout: 10000
   };
 };
 
@@ -43,6 +45,10 @@ export function generateRandomString(length: number = 30) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
+}
+
+export function generateRandomEmail() {
+  return generateRandomString(14) + '@example.com';
 }
 
 /**
