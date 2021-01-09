@@ -23,6 +23,7 @@ import {
 } from './../graphqlapi';
 import { GraphqlClient } from './../common/GraphqlClient';
 import { AuthenticationClientOptions } from './types';
+import { SocialAuthenticationClient } from './SocialAuthenticationClient';
 import {
   CommonMessage,
   EmailScene,
@@ -62,7 +63,7 @@ export class AuthenticationClient {
   tokenProvider: AuthenticationTokenProvider;
   wxqr: QrCodeAuthenticationClient;
   qr: QrCodeAuthenticationClient;
-
+  social: SocialAuthenticationClient;
   constructor(options: AuthenticationClientOptions) {
     this.options = Object.assign({}, DEFAULT_OPTIONS, options);
     const graphqlApiEndpointV2 = `${this.options.host}/v2/graphql`;
