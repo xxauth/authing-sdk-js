@@ -86,6 +86,11 @@ export class AuthenticationClient {
       this.httpClient,
       'APP_AUTH'
     );
+    this.social = new SocialAuthenticationClient(
+      this.options,
+      this.tokenProvider,
+      this.httpClient
+    );
   }
 
   private checkLoggedIn() {
