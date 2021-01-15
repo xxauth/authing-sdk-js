@@ -584,4 +584,35 @@ export class AuthenticationClient {
     );
     return list;
   }
+  /**
+   * @name linkAccount
+   * @name_zh 关联账号
+   * @description 将社交账号绑定到主账号（手机号、邮箱账号）。
+   *
+   * @param {Object} options
+   * @param {string} options.primaryUserToken 主账号 Token
+   * @param {string} options.secondaryUserToken 社交账号 Token
+   *
+   * @example
+   *
+   * authenticationClient.linkAccount({ primaryUserToken: '', secondaryUserToken: '' })
+   *
+   * @returns {{code: 200, message: "绑定成功"}}
+   * @memberof AuthenticationClient
+   */
+  async linkAccount(options: {
+    primaryUserToken: string;
+    secondaryUserToken: string;
+  }): Promise<{ code: number; message: string }> {
+    await this.httpClient.request({
+      method: 'POST',
+      url: `${this.options.host}/api/v2/users/link`,
+      data: {
+        primaryUserToken: options.primaryUserToken,
+        secondaryUserToken: options.secondaryUserToken
+      }
+    });
+    return { code: 200, message: '绑定成功' };
+  };
+  
 }
