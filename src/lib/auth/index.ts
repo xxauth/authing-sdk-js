@@ -614,5 +614,21 @@ export class AuthenticationClient {
     });
     return { code: 200, message: '绑定成功' };
   };
-  
+
+  async unlinkAccount(options: {
+    token: string;
+    provider: string;
+    openid: string
+  }): Promise<{ code: number; message: string }> {
+    await this.httpClient.request({
+      method: 'POST',
+      url: `${this.options.host}/api/v2/users/unlink`,
+      data: {
+        token: options.token,
+        openid: options.openid,
+        provider: options.provider
+      }
+    });
+    return { code: 200, message: '绑定成功' };
+  }
 }
