@@ -7011,3 +7011,14 @@ export const WhitelistDocument = `
   }
 }
     `;
+
+export type linkAccount = (options: {
+  primaryUserToken: string;
+  secondaryUserToken: string;
+}) => Promise<{ code: number; message: string }>
+
+export type unlinkAccount = (options: {
+  token: string;
+  provider: string;
+  openid: string
+}) => Promise<{ code: number; message: string }> 
