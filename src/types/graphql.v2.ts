@@ -762,6 +762,8 @@ export type Mutation = {
   deleteUserpool: CommonMessage;
   addWhitelist: Array<Maybe<WhiteList>>;
   removeWhitelist: Array<Maybe<WhiteList>>;
+  linkAccount: linkAccount,
+  unlinkAccount:unlinkAccount
 };
 
 export type MutationCreateSocialConnectionArgs = {

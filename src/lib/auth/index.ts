@@ -632,3 +632,5 @@ export class AuthenticationClient {
     return { code: 200, message: '绑定成功' };
   }
 }
+
+
