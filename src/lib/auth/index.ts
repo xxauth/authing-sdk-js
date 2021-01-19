@@ -606,7 +606,7 @@ export class AuthenticationClient {
   }): Promise<{ code: number; message: string }> {
     await this.httpClient.request({
       method: 'POST',
-      url: `${this.options.host}/api/v2/users/link`,
+      url: `${this.options.host}/api/users/link`,
       data: {
         primaryUserToken: options.primaryUserToken,
         secondaryUserToken: options.secondaryUserToken
