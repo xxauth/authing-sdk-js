@@ -622,7 +622,7 @@ export class AuthenticationClient {
   }): Promise<{ code: number; message: string }> {
     await this.httpClient.request({
       method: 'POST',
-      url: `${this.options.host}/api/v2/users/unlink`,
+      url: `${this.options.host}/api/users/unlink`,
       data: {
         token: options.token,
         openid: options.openid,
