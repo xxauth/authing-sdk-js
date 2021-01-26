@@ -3278,6 +3278,7 @@ export type UpdateUserpoolResponse = {
     description?: Maybe<string>;
     secret: string;
     logo: string;
+    appSsoEnabled: boolean;
     createdAt?: Maybe<string>;
     updatedAt?: Maybe<string>;
     emailVerifiedDefault: boolean;
@@ -6005,6 +6006,7 @@ export const UpdateUserpoolDocument = `
     id
     name
     domain
+    appSsoEnabled
     description
     secret
     userpoolTypes {
