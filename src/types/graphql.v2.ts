@@ -586,6 +586,7 @@ export type UserPool = {
   allowedOrigins?: Maybe<Scalars['String']>;
   /** 用户 **token** 有效时间，单位为秒，默认为 15 天。 */
   tokenExpiresAfter?: Maybe<Scalars['Int']>;
+  appSsoEnabled?: boolean;
   /** 是否已删除 */
   isDeleted?: Maybe<Scalars['Boolean']>;
   /** 注册频繁检测 */
@@ -763,7 +764,7 @@ export type Mutation = {
   addWhitelist: Array<Maybe<WhiteList>>;
   removeWhitelist: Array<Maybe<WhiteList>>;
   linkAccount: linkAccount,
-  unlinkAccount:unlinkAccount
+  unlinkAccount: unlinkAccount
 };
 
 export type MutationCreateSocialConnectionArgs = {
@@ -6871,6 +6872,7 @@ export const UserpoolDocument = `
     logo
     createdAt
     updatedAt
+    appSsoEnabled
     emailVerifiedDefault
     sendWelcomeEmail
     registerDisabled
