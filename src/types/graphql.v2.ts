@@ -407,6 +407,8 @@ export type User = {
 };
 
 export type Identity = {
+  accessToken?: Maybe<Scalars['String']>;
+  refreshToken?: Maybe<Scalars['String']>;
   openid?: Maybe<Scalars['String']>;
   userIdInIdp?: Maybe<Scalars['String']>;
   userId?: Maybe<Scalars['String']>;
