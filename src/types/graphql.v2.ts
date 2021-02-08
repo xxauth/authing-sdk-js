@@ -6754,6 +6754,8 @@ export const UserDocument = `
       isSocial
       provider
       userPoolId
+      refreshToken
+      accessToken
     }
     nickname
     registerSource
