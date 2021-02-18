@@ -141,3 +141,16 @@ export const popupCenter = (
 
   newWindow?.focus();
 };
+
+
+export const objectToQueryString = (queryParameters: {
+  [x: string]: string;
+}) => {
+  return queryParameters
+    ? Object.entries(queryParameters).reduce((queryString, [key, val]) => {
+      const symbol = queryString.length === 0 ? '?' : '&';
+      queryString += typeof val === 'string' ? `${symbol}${key}=${val}` : '';
+      return queryString;
+    }, '')
+    : '';
+};
