@@ -4154,6 +4154,8 @@ export type UserResponse = {
     identities?: Maybe<
       Array<
         Maybe<{
+          accessToken?: Maybe<string>;
+          refreshToken?: Maybe<string>;
           openid?: Maybe<string>;
           userIdInIdp?: Maybe<string>;
           userId?: Maybe<string>;
