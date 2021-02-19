@@ -282,7 +282,7 @@ export class OrgManagementClient {
     const api = `${this.options.host}/v2/api/org/import-by-json`;
     const res = await Axios.post(api, json, {
       headers: {
-        'x-authing-userpool-id': this.options.userPoolId,
+        'x-authing-userpool-id': this.options.userPoolId || '',
         'x-authing-sdk-version': SDK_VERSION,
         'x-authing-request-from': 'sdk'
       }
