@@ -41,7 +41,7 @@ Hdspg836OaW98JYl0QIDAQAB
     throw new Error(message);
   },
   enableAccessTokenCache: true,
-  host: 'https://core.authing.cn',
+  host: 'https://core.xauth.lucfish.com',
   requestFrom: 'sdk'
 };
 
