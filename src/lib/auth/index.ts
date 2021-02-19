@@ -224,7 +224,7 @@ export class AuthenticationClient {
    */
   async sendSmsCode(phone: string): Promise<{ code: number; message: string }> {
     // TODO: 这种链接从服务器动态拉取
-    const api = `${this.options.host}/api/v2/sms/send`;
+    const api = `${this.options.host}/api/sms/send`;
     const data = await this.httpClient.request({
       method: 'POST',
       url: api,
