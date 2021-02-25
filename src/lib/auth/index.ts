@@ -234,6 +234,18 @@ export class AuthenticationClient {
     return data;
   }
 
+  async sendResetPasswordSmsCode(phone: string): Promise<{ code: number; message: string }> {
+    // TODO: 这种链接从服务器动态拉取
+    const api = `${this.options.host}/api/v2/sms/send`;
+    const data = await this.httpClient.request({
+      method: 'POST',
+      url: api,
+      data: { phone, type: "resetPasswordByPhone" }
+    });
+
+    return data;
+  }
+
   async loginByEmail(
     email: string,
     password: string,
