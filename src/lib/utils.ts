@@ -5,7 +5,7 @@ import { Variables } from 'graphql-request/dist/src/types';
 import _ from 'lodash';
 import * as jwt from 'jsonwebtoken';
 
-export const encrypt = (plainText: string, publicKey: string) => {
+export const encrypt = async (plainText: string, publicKey: string) => {
   // jsencrypt 库在加密后使用了base64编码,所以这里要先将base64编码后的密文转成buffer
   const pawBuffer = Buffer.from(plainText);
   const encryptText = crypto
