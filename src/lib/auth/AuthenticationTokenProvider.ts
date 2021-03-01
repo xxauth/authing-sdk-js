@@ -1,5 +1,4 @@
 import { User } from '../../types/graphql.v2';
-import { GraphqlClient } from './../common/GraphqlClient';
 import { AuthenticationClientOptions } from './types';
 
 const tokenKey = '_authing_token';
@@ -7,10 +6,13 @@ const userKey = '_authing_user';
 
 export class AuthenticationTokenProvider {
   options: AuthenticationClientOptions;
-  graphqlClient: GraphqlClient;
 
   constructor(options: AuthenticationClientOptions) {
     this.options = options;
+  }
+
+  setAccessToken(token: string) {
+    localStorage.setItem(tokenKey, token)
   }
 
   getAccessToken() {
