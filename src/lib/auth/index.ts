@@ -651,14 +651,6 @@ export class AuthenticationClient {
     });
     return { code: 200, message: '绑定成功' };
   }
-
-  async getEnableSocialLogin(): Promise<{ code: number; data: string[] }> {
-    const data = await this.httpClient.request({
-      method: 'POST',
-      url: `${this.options.host}/api/social/getEnableSocialLogin`,
-    });
-    return { code: 200, data: data };
-  }
 }
 
 
