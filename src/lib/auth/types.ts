@@ -1,21 +1,34 @@
+import { HttpClient } from '../common/HttpClient';
+import { GraphqlClient } from '../common/GraphqlClient';
+import { AuthenticationTokenProvider } from './AuthenticationTokenProvider';
+
 /**
  * 初始化 AuthenticationClientOptions 的参数
  */
 export interface AuthenticationClientOptions {
   /** 用户池 ID **/
   userPoolId?: string;
+  /** 应用 ID */
   appId?: string;
+  /** 应用域名，如 https://sample-app.authing.cn */
+  appDomain?: string;
   /** 请求超时时间 **/
   timeout?: number;
   /** 错误回调函数, 默认为 (err: Error) => { throw err } 直接抛出报错 **/
   onError?: (code: number, message: string) => void;
-  /** 密码加密的公钥 */
+  /** 密码传输加密公钥 */
   encrptionPublicKey?: string;
   /** Authing 服务器地址 */
   host?: string;
   /** 请求来源 */
   requestFrom?: string;
-  enableAccessTokenCache?: boolean;
+  /** token */
+  accessToken?: string;
+  /** 加密函数 */
+  encryptFunction?: (plainText: string, publicKey: string) => Promise<string>;
+  httpClient?: typeof HttpClient;
+  graphqlClient?: typeof GraphqlClient;
+  tokenProvider?: typeof AuthenticationTokenProvider;
 }
 
 export interface CheckLoginStatusRes {

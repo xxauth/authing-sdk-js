@@ -1,5 +1,4 @@
 import { GraphqlClient } from './../common/GraphqlClient';
-import { encrypt } from './../utils';
 import { ManagementTokenProvider } from './ManagementTokenProvider';
 import { ManagementClientOptions } from './types';
 import {
@@ -134,7 +133,7 @@ export class UsersManagementClient {
    */
   async create(userInfo: CreateUserInput, keepPassword?: boolean) {
     if (userInfo && userInfo.password) {
-      userInfo.password = encrypt(
+      userInfo.password = await this.options.encryptFunction(
         userInfo.password,
         this.options.encrptionPublicKey
       );
@@ -156,7 +155,7 @@ export class UsersManagementClient {
    */
   async update(id: string, updates: Partial<User>) {
     if (updates && updates.password) {
-      updates.password = encrypt(
+      updates.password = await this.options.encryptFunction(
         updates.password,
         this.options.encrptionPublicKey
       );

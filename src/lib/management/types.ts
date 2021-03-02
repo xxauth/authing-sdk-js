@@ -1,4 +1,6 @@
 import { Org } from '../../types/graphql.v2';
+import { GraphqlClient } from '../common/GraphqlClient';
+import { HttpClient } from '../common/HttpClient';
 
 /**
  * 初始化 Authing SDK 的参数，secret 和 accessToken 必须传其中一个。
@@ -22,7 +24,10 @@ export interface ManagementClientOptions {
   host?: string;
   /** 请求来源 */
   requestFrom?: string;
-  enableAccessTokenCache?: boolean;
+  /** 加密函数 */
+  encryptFunction?: (plainText: string, publicKey: string) => Promise<string>;
+  httpClient?: typeof HttpClient;
+  graphqlClient?: typeof GraphqlClient;
 }
 
 /**

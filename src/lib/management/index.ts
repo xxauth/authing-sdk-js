@@ -25,7 +25,7 @@ import {
   WhiteList,
   WhitelistType
 } from '../../types/graphql.v2';
-import { verifyToken } from '../utils';
+import { encrypt, verifyToken } from '../utils';
 import { HttpClient } from '../common/HttpClient';
 import Axios from 'axios';
 
@@ -40,9 +40,9 @@ Hdspg836OaW98JYl0QIDAQAB
   onError: (_: number, message: string) => {
     throw new Error(message);
   },
-  enableAccessTokenCache: true,
   host: 'https://core.xauth.lucfish.com',
-  requestFrom: 'sdk'
+  requestFrom: 'sdk',
+  encryptFunction: encrypt
 };
 
 export class ManagementClient {
@@ -77,7 +77,7 @@ export class ManagementClient {
 
     Axios.defaults.baseURL = this.options.host;
 
-    this.graphqlClientV2 = new GraphqlClient(
+    this.graphqlClientV2 = new (this.options.graphqlClient || GraphqlClient)(
       graphqlApiEndpointV2,
       this.options
     );
@@ -85,7 +85,7 @@ export class ManagementClient {
       this.options,
       this.graphqlClientV2
     );
-    this.httpClient = new HttpClient(this.options, this.tokenProvider);
+    this.httpClient = new (this.options.httpClient || HttpClient)(this.options, this.tokenProvider);
     this.users = new UsersManagementClient(
       this.options,
       this.graphqlClientV2,
