@@ -1361,6 +1361,7 @@ export type UpdateUserInput = {
   province?: Maybe<Scalars['String']>;
   country?: Maybe<Scalars['String']>;
   updatedAt?: Maybe<Scalars['String']>;
+  customData?: Maybe<Scalars['String']>;
 };
 
 export type UpdateUserpoolInput = {
@@ -7033,4 +7034,4 @@ export type unlinkAccount = (options: {
   token: string;
   provider: string;
   openid: string
-}) => Promise<{ code: number; message: string }> 
+}) => Promise<{ code: number; message: string }>
