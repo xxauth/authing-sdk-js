@@ -41,8 +41,8 @@ export class GraphqlClient {
       const response = error.response;
       const errors = response.errors;
       errors.map((err: any) => {
+        console.error('graphql error: ', err)
         const { message: msg } = err;
-        // console.log('打印错误', err);
         const { errors } = JSON.parse(msg);
         const { message: errorMessage } = errors[0]
         const { code, message } = errorMessage;
